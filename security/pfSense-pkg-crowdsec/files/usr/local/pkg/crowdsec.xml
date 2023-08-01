@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE packagegui SYSTEM "../schema/packages.dtd">
+<?xml-stylesheet type="text/xsl" href="../xsl/package.xsl"?>
+<packagegui>
+    <copyright>
+        <![CDATA[
+/*
+ * crowdsec.xml
+ *
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2020-2023 Crowdsec
+ * All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+	]]>
+    </copyright>
+    <name>CrowdSec</name>
+    <title>Security/CrowdSec</title>
+    <include_file>/usr/local/pkg/crowdsec.inc</include_file>
+    <menu>
+        <name>CrowdSec</name>
+        <section>Services</section>
+        <url>/crowdsec_landing.php</url>
+    </menu>
+    <service>
+        <name>crowdsec</name>
+        <rcfile>pfsense_crowdsec</rcfile>
+        <description>Crowdsec service</description>
+    </service>
+    <tabs>
+        <tab>
+            <text>Read me</text>
+            <url>/crowdsec_landing.php</url>
+        </tab>
+        <tab>
+            <text>Settings</text>
+            <url>/pkg_edit.php?xml=crowdsec.xml</url>
+            <active/>
+        </tab>
+        <tab>
+            <text>Status</text>
+            <url>/crowdsec_status.php</url>
+        </tab>
+        <tab>
+            <text>Metrics</text>
+            <url>/crowdsec_metric.php</url>
+        </tab>
+    </tabs>
+    <fields>
+        <field>
+            <name>Log processor (CrowdSec agent)</name>
+            <type>listtopic</type>
+        </field>
+        <field>
+            <fielddescr>Enable</fielddescr>
+            <fieldname>enable_agent</fieldname>
+            <type>checkbox</type>
+            <description></description>
+        </field>
+        <field>
+            <fielddescr>Log level</fielddescr>
+            <fieldname>agent_log_level</fieldname>
+            <description><![CDATA[]]></description>
+            <type>select</type>
+            <options>
+                <option><name>Debug</name><value>debug</value></option>
+                <option><name>Info</name><value>info</value></option>
+                <option><name>Warning</name><value>warning</value></option>
+            </options>
+            <default_value>info</default_value>
+            <required>true</required>
+        </field>
+        <field>
+            <fielddescr>Metrics port</fielddescr>
+            <fieldname>metrics_port</fieldname>
+            <type>input</type>
+            <description></description>
+            <default_value>6060</default_value>
+            <required>true</required>
+        </field>
+
+        <field>
+            <name>Remediation component</name>
+            <type>listtopic</type>
+        </field>
+        <field>
+            <fielddescr>Enable firewall bouncer</fielddescr>
+            <fieldname>enable_fw_bouncer</fieldname>
+            <type>checkbox</type>
+            <description></description>
+        </field>
+        <field>
+            <fielddescr>Log level</fielddescr>
+            <fieldname>firewall_bouncer_log_level</fieldname>
+            <description><![CDATA[]]></description>
+            <type>select</type>
+            <options>
+                <option><name>Debug</name><value>debug</value></option>
+                <option><name>Info</name><value>info</value></option>
+                <option><name>Warning</name><value>warning</value></option>
+            </options>
+            <default_value>info</default_value>
+            <required>true</required>
+        </field>
+
+        <field>
+            <name>Security Engine (LAPI)</name>
+            <type>listtopic</type>
+        </field>
+        <field>
+            <fielddescr>LAPI port</fielddescr>
+            <fieldname>lapi_port</fieldname>
+            <type>input</type>
+            <description>Pick the port for the LAPI endpoint.</description>
+            <default_value>8080</default_value>
+            <required>true</required>
+        </field>
+        <field>
+            <fielddescr>LAPI host</fielddescr>
+            <fieldname>lapi_host</fieldname>
+            <type>input</type>
+            <description>Set the LAPI endpoint host or ip.</description>
+            <default_value>127.0.0.1</default_value>
+            <required>true</required>
+        </field>
+        <field>
+            <fielddescr>LAPI is remote</fielddescr>
+            <fieldname>lapi_is_remote</fieldname>
+            <type>checkbox</type>
+            <description></description>
+            <combinefields>begin</combinefields>
+            <enablefields>agent_user,agent_password,fw_bouncer_api_key</enablefields>
+        </field>
+        <field>
+            <fielddescr>Agent user</fielddescr>
+            <fieldname>agent_user</fieldname>
+            <type>input</type>
+            <description>Set the name of the remote agent</description>
+        </field>
+        <field>
+            <fielddescr>Agent password</fielddescr>
+            <fieldname>agent_password</fieldname>
+            <type>password</type>
+            <description>Set the password of the remote agent</description>
+        </field>
+        <field>
+            <fielddescr>Firewall bouncer API key</fielddescr>
+            <fieldname>fw_bouncer_api_key</fieldname>
+            <type>password</type>
+            <description>Set the remote firewall bouncer API key</description>
+            <combinefields>end</combinefields>
+        </field>
+        <!-- Crowdsec IPv4 blocklist settings -->
+        <field>
+            <name>CrowdSec IPv4 blocklist rule settings</name>
+            <type>listtopic</type>
+        </field>
+        <field>
+            <fielddescr>Description</fielddescr>
+            <fieldname>block_v4_info</fieldname>
+            <type>info</type>
+            <description><![CDATA[Add a pfctl rule: <i>block drop {direction} {log} quick inet from crowdsec_blacklists to any label "CrowdSec IPv4" tag {tag}</i>]]></description>
+        </field>
+        <field>
+            <fielddescr>Enable CrowdSec IPv4 blocklist rule</fielddescr>
+            <fieldname>enable_block_v4</fieldname>
+            <type>checkbox</type>
+            <enablefields>block_v4_direction,block_v4_log,block_v4_tag</enablefields>
+        </field>
+        <field>
+            <fielddescr>Direction</fielddescr>
+            <fieldname>block_v4_direction</fieldname>
+            <description><![CDATA[]]></description>
+            <type>select</type>
+            <options>
+                <option><name>Any</name><value>any</value></option>
+                <option><name>In</name><value>in</value></option>
+                <option><name>Out</name><value>out</value></option>
+            </options>
+            <default_value>any</default_value>
+        </field>
+        <field>
+            <fielddescr>Log</fielddescr>
+            <fieldname>block_v4_log</fieldname>
+            <type>checkbox</type>
+        </field>
+        <field>
+            <fielddescr>Tag</fielddescr>
+            <fieldname>block_v4_tag</fieldname>
+            <type>input</type>
+            <description></description>
+        </field>
+        <!-- Crowdsec IPv6 blocklist settings -->
+        <field>
+            <name>CrowdSec IPv6 blocklist rule settings</name>
+            <type>listtopic</type>
+        </field>
+        <field>
+            <fielddescr>Description</fielddescr>
+            <fieldname>block_v6_info</fieldname>
+            <type>info</type>
+            <description><![CDATA[Add a pfctl rule: <i>block drop {direction} {log} quick inet6 from crowdsec6_blacklists to any label "CrowdSec IPv6" tag {tag}</i>]]></description>
+        </field>
+        <field>
+            <fielddescr>Enable CrowdSec IPv6 blocklist rule</fielddescr>
+            <fieldname>enable_block_v6</fieldname>
+            <type>checkbox</type>
+            <enablefields>block_v6_direction,block_v6_log,block_v6_tag</enablefields>
+        </field>
+        <field>
+            <fielddescr>Direction</fielddescr>
+            <fieldname>block_v6_direction</fieldname>
+            <description><![CDATA[]]></description>
+            <type>select</type>
+            <options>
+                <option><name>Any</name><value>any</value></option>
+                <option><name>In</name><value>in</value></option>
+                <option><name>Out</name><value>out</value></option>
+            </options>
+            <default_value>any</default_value>
+        </field>
+        <field>
+            <fielddescr>Log</fielddescr>
+            <fieldname>block_v6_log</fieldname>
+            <type>checkbox</type>
+        </field>
+        <field>
+            <fielddescr>Tag</fielddescr>
+            <fieldname>block_v6_tag</fieldname>
+            <type>input</type>
+            <description></description>
+        </field>
+    </fields>
+
+    <custom_php_install_command>
+        <![CDATA[
+		crowdsec_install();
+		]]>
+    </custom_php_install_command>
+
+    <custom_php_resync_config_command>
+        <![CDATA[
+		crowdsec_resync_config();
+		]]>
+    </custom_php_resync_config_command>
+
+    <custom_php_validation_command>
+        <![CDATA[
+        crowdsec_validate_form($_POST, $input_errors);
+        ]]>
+    </custom_php_validation_command>
+
+    <custom_php_pre_deinstall_command>
+        <![CDATA[
+		crowdsec_deinstall();
+		]]>
+    </custom_php_pre_deinstall_command>
+
+    <filter_rules_needed><![CDATA[crowdsec_generate_rules]]></filter_rules_needed>
+
+    <!--
+    <custom_add_php_command></custom_add_php_command>
+    <custom_add_php_command_late></custom_add_php_command_late>
+    <custom_php_global_functions></custom_php_global_functions>
+    <custom_php_deinstall_command></custom_php_deinstall_command>
+    <custom_delete_php_command></custom_delete_php_command>
+    <start_command></start_command>
+    <custom_php_service_status_command></custom_php_service_status_command>
+    <custom_php_after_head_command></custom_php_after_head_command>
+    <custom_php_command_before_form></custom_php_command_before_form>
+    <custom_php_after_form_command></custom_php_after_form_command>
+    -->
+</packagegui>
