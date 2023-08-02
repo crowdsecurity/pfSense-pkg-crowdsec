@@ -70,13 +70,13 @@ $content = <<<EOT
   <script src="/crowdsec/js/crowdsec.js" defer></script>
     <script>
     events.push(function() {
-        CrowdSec.initService();
          CrowdSec.initStatus();
          $('#tabs').show();
+         CrowdSec.initService();
     });
     </script>
 <div id="services">
-  Service status: crowdsec <span id="crowdsec-status">...</span> - firewall bouncer <span id="crowdsec-firewall-status">...</span>
+  Service status: crowdsec <span id="crowdsec-status"><i class="fa fa-spinner fa-spin"></i></span> - firewall bouncer <span id="crowdsec-firewall-status"><i class="fa fa-spinner fa-spin"></i></span>
 </div>
 <div id="tabs" style="display:none;">
   <ul>

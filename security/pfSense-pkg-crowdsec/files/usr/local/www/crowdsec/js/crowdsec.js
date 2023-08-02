@@ -373,6 +373,40 @@ const CrowdSec = (function () {
         _initTab(id, action, dataCallback);
     }
 
+    function _initMetricsDecisions() {
+        const action = 'metrics-decisions-list';
+        const id = "#tab-metrics-decisions";
+        const dataCallback = function (data) {
+            const rows = [];
+            if(data.decisions){
+                const decisions = Object.entries(data.decisions);
+                decisions.map(function (decision) {
+                    if(decision.length === 2){
+                        const origins = Object.entries(decision[1]);
+                        origins.map(function (origin) {
+                            if(origin.length === 2){
+                                const types = Object.entries(origin[1]);
+                                types.map(function (type) {
+                                    if(type.length === 2){
+                                        rows.push({
+                                            // search will break on empty values when using .append(). so we use spaces
+                                            reason: decision[0] || ' ',
+                                            origin: origin[0],
+                                            action: type[0],
+                                            count: type[1]
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+            $(id + ' table').bootgrid('clear').bootgrid('append', rows);
+        };
+        _initTab(id, action, dataCallback);
+    }
+
     function _initMetricsBucket() {
         const action = 'metrics-bucket-list';
         const id = "#tab-metrics-bucket";
@@ -553,9 +587,6 @@ const CrowdSec = (function () {
             type: 'POST',
             method: 'POST',
             success: function(data) {
-                // TODO handle errors
-                console.log(data);
-
                 var crowdsecStatus = data['crowdsec-status'];
                 if (crowdsecStatus === 'unknown') {
                     crowdsecStatus = '<span class="text-danger">Unknown</span>';
@@ -650,7 +681,8 @@ const CrowdSec = (function () {
             case '#tab-metrics-lapi-bouncers':
                 _initMetricsLapiBouncers();
                 break;
-            case '#tab-metrics-lapi-decisions':
+            case '#tab-metrics-decisions':
+                _initMetricsDecisions();
                 break;
             case '#tab-metrics-lapi-alerts':
                 _initMetricsLapiAlerts();
@@ -731,7 +763,8 @@ const CrowdSec = (function () {
                     case 'tab-metrics-lapi-bouncers':
                         _initMetricsLapiBouncers();
                         break;
-                    case 'tab-metrics-lapi-decisions':
+                    case 'tab-metrics-decisions':
+                        _initMetricsDecisions();
                         break;
                     case 'tab-metrics-lapi-alerts':
                         _initMetricsLapiAlerts();
