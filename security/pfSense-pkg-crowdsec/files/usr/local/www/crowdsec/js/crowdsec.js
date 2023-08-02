@@ -51,6 +51,7 @@ const CrowdSec = (function () {
             }).text(_humanizeDate(dt)).prop('outerHTML');
         }
     };
+    let metricsInterval = null;
 
     function _decisionsByType(decisions) {
         const dectypes = {};
@@ -110,7 +111,6 @@ const CrowdSec = (function () {
                 _updateFreshness(selector, moment());
             }
         })
-
     }
 
     function _parseDuration (duration) {
@@ -172,11 +172,19 @@ const CrowdSec = (function () {
             }).insertBefore(tab.find('.actionBar .actions .dropdown:first'));
             _addFreshness(selector);
             _refreshTab(selector, action, dataCallback);
+            // Refresh periodically
+            if (metricsInterval) {
+                clearInterval(metricsInterval);
+            }
+            metricsInterval = setInterval(function () {
+                _refreshTab(selector, action, dataCallback)
+            }, 60000);
+
         }).bootgrid({
-            rowCount: [10, 25, 50, 100],
+            rowCount: [50, 100, 200],
             caseSensitive: false,
             formatters: _dataFormatters
-        });
+        })
     }
 
     function _initStatusMachines() {
@@ -373,6 +381,40 @@ const CrowdSec = (function () {
         _initTab(id, action, dataCallback);
     }
 
+    function _initMetricsDecisions() {
+        const action = 'metrics-decisions-list';
+        const id = "#tab-metrics-decisions";
+        const dataCallback = function (data) {
+            const rows = [];
+            if(data.decisions){
+                const decisions = Object.entries(data.decisions);
+                decisions.map(function (decision) {
+                    if(decision.length === 2){
+                        const origins = Object.entries(decision[1]);
+                        origins.map(function (origin) {
+                            if(origin.length === 2){
+                                const types = Object.entries(origin[1]);
+                                types.map(function (type) {
+                                    if(type.length === 2){
+                                        rows.push({
+                                            // search will break on empty values when using .append(). so we use spaces
+                                            reason: decision[0] || ' ',
+                                            origin: origin[0],
+                                            action: type[0],
+                                            count: type[1]
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+            $(id + ' table').bootgrid('clear').bootgrid('append', rows);
+        };
+        _initTab(id, action, dataCallback);
+    }
+
     function _initMetricsBucket() {
         const action = 'metrics-bucket-list';
         const id = "#tab-metrics-bucket";
@@ -544,6 +586,34 @@ const CrowdSec = (function () {
         _initTab(id, action, dataCallback);
     }
 
+    function initService () {
+        $.ajax({
+            url: api_url,
+            cache: false,
+            dataType: 'json',
+            data: {action: 'services-status'},
+            type: 'POST',
+            method: 'POST',
+            success: function(data) {
+                var crowdsecStatus = data['crowdsec-status'];
+                if (crowdsecStatus === 'unknown') {
+                    crowdsecStatus = '<span class="text-danger">Unknown</span>';
+                } else {
+                    crowdsecStatus = _yesno2html(crowdsecStatus === 'running');
+                }
+                $('#crowdsec-status').html(crowdsecStatus);
+
+                var crowdsecFirewallStatus = data['crowdsec-firewall-status'];
+                if (crowdsecFirewallStatus === 'unknown') {
+                    crowdsecFirewallStatus = '<span class="text-danger">Unknown</span>';
+                } else {
+                    crowdsecFirewallStatus = _yesno2html(crowdsecFirewallStatus === 'running');
+                }
+                $('#crowdsec-firewall-status').html(crowdsecFirewallStatus);
+            }
+        })
+    }
+
     function deleteDecision(decisionId) {
         const $modal = $('#remove-decision-modal');
         const action = 'status-decision-delete';
@@ -619,7 +689,8 @@ const CrowdSec = (function () {
             case '#tab-metrics-lapi-bouncers':
                 _initMetricsLapiBouncers();
                 break;
-            case '#tab-metrics-lapi-decisions':
+            case '#tab-metrics-decisions':
+                _initMetricsDecisions();
                 break;
             case '#tab-metrics-lapi-alerts':
                 _initMetricsLapiAlerts();
@@ -700,7 +771,8 @@ const CrowdSec = (function () {
                     case 'tab-metrics-lapi-bouncers':
                         _initMetricsLapiBouncers();
                         break;
-                    case 'tab-metrics-lapi-decisions':
+                    case 'tab-metrics-decisions':
+                        _initMetricsDecisions();
                         break;
                     case 'tab-metrics-lapi-alerts':
                         _initMetricsLapiAlerts();
@@ -726,6 +798,7 @@ const CrowdSec = (function () {
     return {
         deleteDecision: deleteDecision,
         initStatus: initStatus,
-        initMetrics: initMetrics
+        initMetrics: initMetrics,
+        initService: initService
     };
 }());

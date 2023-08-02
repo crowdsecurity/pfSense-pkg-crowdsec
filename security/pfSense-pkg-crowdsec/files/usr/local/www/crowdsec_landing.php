@@ -2,7 +2,6 @@
 /*
  * crowdsec_landing.php
  *
- * part of pfSense (https://www.pfsense.org)
  * Copyright (c) 2020-2023 Crowdsec
  * All rights reserved.
  *
@@ -35,7 +34,7 @@ $tab_array = array();
 $tab_array[] = array("Read me", true, "/crowdsec_landing.php");
 $tab_array[] = array("Settings", false, "/pkg_edit.php?xml=crowdsec.xml&amp;id=0");
 $tab_array[] = array("Status", false, "/crowdsec_status.php");
-$tab_array[] = array("Metrics", false, "/crowdsec_metric.php");
+$tab_array[] = array("Metrics", false, "/crowdsec_metrics.php");
 display_top_tabs($tab_array);
 
 

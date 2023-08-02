@@ -2,7 +2,6 @@
 /*
  * api.php
  *
- * part of pfSense (https://www.pfsense.org)
  * Copyright (c) 2020-2023 Crowdsec
  * All rights reserved.
  *
@@ -52,7 +51,7 @@ if ($method === 'DELETE' && isset($_GET['action']) && isset($_GET['decision_id']
             echo shell_exec("/usr/local/bin/cscli alerts list -l 0 -o json | sed 's/^null$/\[\]/'");
             break;
         case 'status-bouncers-list':
-            echo shell_exec("/usr/local/bin/cscli bouncers list -o json | sed 's/^null$/\[\]/'");
+            echo shell_exec("/usr/local/bin/cscli bouncers list -o json");
             break;
         case 'status-collections-list':
             echo shell_exec("/usr/local/bin/cscli collections list -o json");
@@ -61,7 +60,7 @@ if ($method === 'DELETE' && isset($_GET['action']) && isset($_GET['decision_id']
             echo shell_exec("/usr/local/bin/cscli decisions list -l 0 -o json | sed 's/^null$/\[\]/'");
             break;
         case 'status-machines-list':
-            echo shell_exec("/usr/local/bin/cscli machines list -o json | sed 's/^null$/\[\]/'");
+            echo shell_exec("/usr/local/bin/cscli machines list -o json");
             break;
         case 'status-parsers-list':
             echo shell_exec("/usr/local/bin/cscli parsers list -o json");
@@ -79,8 +78,30 @@ if ($method === 'DELETE' && isset($_GET['action']) && isset($_GET['decision_id']
         case 'metrics-lapi-machines-list':
         case 'metrics-lapi-list':
         case 'metrics-lapi-bouncers-list':
+        case 'metrics-decisions-list';
             echo $mockedMetrics;
             // echo shell_exec("/usr/local/bin/cscli metrics -o json");
+            break;
+        case 'services-status':
+            $crowdsec = trim(shell_exec("service crowdsec onestatus"));
+            $crowdsec_status = "unknown";
+            if (strpos($crowdsec, "not running") > 0) {
+                $crowdsec_status = "stopped";
+            } elseif (strpos($crowdsec, "is running") > 0) {
+                $crowdsec_status = "running";
+            }
+            $crowdsec_firewall = trim(shell_exec("service crowdsec_firewall onestatus"));
+            $crowdsec_firewall_status = "unknown";
+            if (strpos($crowdsec_firewall, "not running") > 0) {
+                $crowdsec_firewall_status = "stopped";
+            } elseif (strpos($crowdsec_firewall, "is running") > 0) {
+                $crowdsec_firewall_status = "running";
+            }
+            echo json_encode(
+                [
+                    'crowdsec-status' => $crowdsec_status,
+                    'crowdsec-firewall-status'=> $crowdsec_firewall_status
+                ]);
             break;
         default;
             echo $default;

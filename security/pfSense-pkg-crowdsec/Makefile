@@ -41,7 +41,7 @@ do-install:
     		${STAGEDIR}${PREFIX}/www
 	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/www/crowdsec_status.php \
 			${STAGEDIR}${PREFIX}/www
-	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/www/crowdsec_metric.php \
+	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/www/crowdsec_metrics.php \
             			${STAGEDIR}${PREFIX}/www
 	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/www/crowdsec/endpoint/api.php \
           			${STAGEDIR}${PREFIX}/www/crowdsec/endpoint

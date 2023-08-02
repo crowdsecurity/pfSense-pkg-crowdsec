@@ -2,7 +2,6 @@
 /*
  * crowdsec_status.php
  *
- * part of pfSense (https://www.pfsense.org)
  * Copyright (c) 2020-2023 Crowdsec
  * All rights reserved.
  *
@@ -35,7 +34,7 @@ $tab_array = array();
 $tab_array[] = array("Read me", false, "/crowdsec_landing.php");
 $tab_array[] = array("Settings", false, "/pkg_edit.php?xml=crowdsec.xml&amp;id=0");
 $tab_array[] = array("Status", true, "/crowdsec_status.php");
-$tab_array[] = array("Metrics", false, "/crowdsec_metric.php");
+$tab_array[] = array("Metrics", false, "/crowdsec_metrics.php");
 display_top_tabs($tab_array);
 
 $css = <<<EOT
@@ -43,39 +42,16 @@ $css = <<<EOT
 .search .fa-search {
   font-weight: bolder !important;
 }
-.no-results {
- display:none !important;
-}
 
 .loading {
 text-align:center;
 padding: 4rem;
 }
 
-.table td {
-  white-space: break-spaces;
-  word-break: break-all;
+#services {
+    padding: 0px 0px 20px 0px;
 }
 
-.content-box table {
-  table-layout: auto;
-}
-
-table.bootgrid-table tr .btn-sm {
-  padding: 2px 6px;
-}
-
-table.bootgrid-table tr > td {
-  padding: 3px;
-}
-
-li.spaced {
-  margin-left: 15px;
-}
-
-ul.nav>li>a {
-  padding: 6px;
-}
 
 #decisions-disclaimer {
 border: 1px solid #000000;
@@ -96,9 +72,12 @@ $content = <<<EOT
     events.push(function() {
          CrowdSec.initStatus();
          $('#tabs').show();
+         CrowdSec.initService();
     });
     </script>
-
+<div id="services">
+  Service status: crowdsec <span id="crowdsec-status"><i class="fa fa-spinner fa-spin"></i></span> - firewall bouncer <span id="crowdsec-firewall-status"><i class="fa fa-spinner fa-spin"></i></span>
+</div>
 <div id="tabs" style="display:none;">
   <ul>
     <li><a href="#tab-status-machines">Machines</a></li>
@@ -115,7 +94,7 @@ $content = <<<EOT
     <table id="table-status-machines" class="table table-condensed table-hover table-striped crowdsecTable">
             <thead>
                 <tr>
-                  <th data-column-id="name">Name</th>
+                  <th data-column-id="name" data-order="asc">Name</th>
                   <th data-column-id="ip_address">IP Address</th>
                   <th data-column-id="last_update" data-formatter="datetime">Last Update</th>
                   <th data-column-id="validated" data-formatter="yesno" data-searchable="false">Validated?</th>
@@ -134,7 +113,7 @@ $content = <<<EOT
    <table id="table-status-bouncers" class="table table-condensed table-hover table-striped crowdsecTable">
         <thead>
             <tr>
-              <th data-column-id="name">Name</th>
+              <th data-column-id="name" data-order="asc">Name</th>
               <th data-column-id="ip_address">IP Address</th>
               <th data-column-id="valid" data-formatter="yesno" data-searchable="false">Valid</th>
               <th data-column-id="last_pull" data-formatter="datetime">Last API Pull</th>
@@ -154,7 +133,7 @@ $content = <<<EOT
     <table id="table-status-collections" class="table table-condensed table-hover table-striped crowdsecTable">
         <thead>
             <tr>
-              <th data-column-id="name">Name</th>
+              <th data-column-id="name" data-order="asc">Name</th>
               <th data-column-id="status">Status</th>
               <th data-column-id="local_version">Version</th>
               <th data-column-id="local_path">Local Path</th>
@@ -172,7 +151,7 @@ $content = <<<EOT
      <table id="table-status-scenarios" class="table table-condensed table-hover table-striped crowdsecTable">
         <thead>
             <tr>
-              <th data-column-id="name">Name</th>
+              <th data-column-id="name" data-order="asc">Name</th>
               <th data-column-id="status">Status</th>
               <th data-column-id="local_version">Version</th>
               <th data-column-id="local_path">Path</th>
@@ -191,7 +170,7 @@ $content = <<<EOT
       <table id="table-status-parsers" class="table table-condensed table-hover table-striped crowdsecTable">
         <thead>
             <tr>
-              <th data-column-id="name">Name</th>
+              <th data-column-id="name" data-order="asc">Name</th>
               <th data-column-id="status">Status</th>
               <th data-column-id="local_version">Version</th>
               <th data-column-id="local_path">Local Path</th>
@@ -210,7 +189,7 @@ $content = <<<EOT
       <table id="table-status-postoverflows" class="table table-condensed table-hover table-striped crowdsecTable">
             <thead>
                 <tr>
-                  <th data-column-id="name">Name</th>
+                  <th data-column-id="name" data-order="asc">Name</th>
                   <th data-column-id="status">Status</th>
                   <th data-column-id="local_version">Version</th>
                   <th data-column-id="local_path">Local Path</th>
@@ -229,7 +208,7 @@ $content = <<<EOT
     <table id="table-status-alerts" class="table table-condensed table-hover table-striped crowdsecTable">
         <thead>
             <tr>
-              <th data-column-id="id" data-type="numeric">ID</th>
+              <th data-column-id="id" data-type="numeric" data-order="asc">ID</th>
               <th data-column-id="value">Value</th>
               <th data-column-id="reason">Reason</th>
               <th data-column-id="country">Country</th>
@@ -256,7 +235,7 @@ $content = <<<EOT
                 <tr>
                   <th data-column-id="delete" data-formatter="delete" 
                   data-visible-in-selection="false"></th>
-                  <th data-column-id="id" data-identifier="true" data-type="numeric">ID</th>
+                  <th data-column-id="id" data-identifier="true" data-type="numeric" data-order="asc">ID</th>
                   <th data-column-id="source">Source</th>
                   <th data-column-id="scope_value">Scope:Value</th>
                   <th data-column-id="reason">Reason</th>

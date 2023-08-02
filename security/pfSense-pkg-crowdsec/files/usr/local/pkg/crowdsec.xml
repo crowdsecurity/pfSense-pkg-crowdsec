@@ -7,7 +7,6 @@
 /*
  * crowdsec.xml
  *
- * part of pfSense (https://www.pfsense.org)
  * Copyright (c) 2020-2023 Crowdsec
  * All rights reserved.
  *
@@ -54,7 +53,7 @@
         </tab>
         <tab>
             <text>Metrics</text>
-            <url>/crowdsec_metric.php</url>
+            <url>/crowdsec_metrics.php</url>
         </tab>
     </tabs>
     <fields>
@@ -186,7 +185,6 @@
             <options>
                 <option><name>Any</name><value>any</value></option>
                 <option><name>In</name><value>in</value></option>
-                <option><name>Out</name><value>out</value></option>
             </options>
             <default_value>any</default_value>
         </field>
@@ -226,7 +224,6 @@
             <options>
                 <option><name>Any</name><value>any</value></option>
                 <option><name>In</name><value>in</value></option>
-                <option><name>Out</name><value>out</value></option>
             </options>
             <default_value>any</default_value>
         </field>
