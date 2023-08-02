@@ -172,14 +172,15 @@ const CrowdSec = (function () {
             }).insertBefore(tab.find('.actionBar .actions .dropdown:first'));
             _addFreshness(selector);
             _refreshTab(selector, action, dataCallback);
-            // Refresh periodically
-            if (metricsInterval) {
-                clearInterval(metricsInterval);
+            if(action.startsWith("metrics")){
+                // Refresh periodically
+                if (metricsInterval) {
+                    clearInterval(metricsInterval);
+                }
+                metricsInterval = setInterval(function () {
+                    _refreshTab(selector, action, dataCallback)
+                }, 60000);
             }
-            metricsInterval = setInterval(function () {
-                _refreshTab(selector, action, dataCallback)
-            }, 60000);
-
         }).bootgrid({
             rowCount: [50, 100, 200],
             caseSensitive: false,
