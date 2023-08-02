@@ -173,10 +173,10 @@ const CrowdSec = (function () {
             _addFreshness(selector);
             _refreshTab(selector, action, dataCallback);
         }).bootgrid({
-            rowCount: [10, 25, 50, 100],
+            rowCount: [50, 100, 200],
             caseSensitive: false,
             formatters: _dataFormatters
-        });
+        })
     }
 
     function _initStatusMachines() {

@@ -2,7 +2,6 @@
 /*
  * api.php
  *
- * part of pfSense (https://www.pfsense.org)
  * Copyright (c) 2020-2023 Crowdsec
  * All rights reserved.
  *
@@ -52,7 +51,7 @@ if ($method === 'DELETE' && isset($_GET['action']) && isset($_GET['decision_id']
             echo shell_exec("/usr/local/bin/cscli alerts list -l 0 -o json | sed 's/^null$/\[\]/'");
             break;
         case 'status-bouncers-list':
-            echo shell_exec("/usr/local/bin/cscli bouncers list -o json | sed 's/^null$/\[\]/'");
+            echo shell_exec("/usr/local/bin/cscli bouncers list -o json");
             break;
         case 'status-collections-list':
             echo shell_exec("/usr/local/bin/cscli collections list -o json");
@@ -61,7 +60,7 @@ if ($method === 'DELETE' && isset($_GET['action']) && isset($_GET['decision_id']
             echo shell_exec("/usr/local/bin/cscli decisions list -l 0 -o json | sed 's/^null$/\[\]/'");
             break;
         case 'status-machines-list':
-            echo shell_exec("/usr/local/bin/cscli machines list -o json | sed 's/^null$/\[\]/'");
+            echo shell_exec("/usr/local/bin/cscli machines list -o json");
             break;
         case 'status-parsers-list':
             echo shell_exec("/usr/local/bin/cscli parsers list -o json");

@@ -2,7 +2,7 @@
 /*
  * crowdsec.inc
  *
- * part of pfSense (https://www.pfsense.org)
+ * 
  * Copyright (c) 2022-2023 Rubicon Communications, LLC (Netgate)
  * All rights reserved.
  *
