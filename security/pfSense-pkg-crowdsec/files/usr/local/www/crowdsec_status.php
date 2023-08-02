@@ -48,6 +48,10 @@ text-align:center;
 padding: 4rem;
 }
 
+#services {
+    padding: 0px 0px 20px 0px;
+}
+
 
 #decisions-disclaimer {
 border: 1px solid #000000;
@@ -66,11 +70,14 @@ $content = <<<EOT
   <script src="/crowdsec/js/crowdsec.js" defer></script>
     <script>
     events.push(function() {
+        CrowdSec.initService();
          CrowdSec.initStatus();
          $('#tabs').show();
     });
     </script>
-
+<div id="services">
+  Service status: crowdsec <span id="crowdsec-status">...</span> - firewall bouncer <span id="crowdsec-firewall-status">...</span>
+</div>
 <div id="tabs" style="display:none;">
   <ul>
     <li><a href="#tab-status-machines">Machines</a></li>

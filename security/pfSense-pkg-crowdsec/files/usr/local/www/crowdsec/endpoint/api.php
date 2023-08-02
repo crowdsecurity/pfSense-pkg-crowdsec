@@ -81,6 +81,27 @@ if ($method === 'DELETE' && isset($_GET['action']) && isset($_GET['decision_id']
             echo $mockedMetrics;
             // echo shell_exec("/usr/local/bin/cscli metrics -o json");
             break;
+        case 'services-status':
+            $crowdsec = trim(shell_exec("service crowdsec onestatus"));
+            $crowdsec_status = "unknown";
+            if (strpos($crowdsec, "not running") > 0) {
+                $crowdsec_status = "stopped";
+            } elseif (strpos($crowdsec, "is running") > 0) {
+                $crowdsec_status = "running";
+            }
+            $crowdsec_firewall = trim(shell_exec("service crowdsec_firewall onestatus"));
+            $crowdsec_firewall_status = "unknown";
+            if (strpos($crowdsec_firewall, "not running") > 0) {
+                $crowdsec_firewall_status = "stopped";
+            } elseif (strpos($crowdsec_firewall, "is running") > 0) {
+                $crowdsec_firewall_status = "running";
+            }
+            echo json_encode(
+                [
+                    'crowdsec-status' => $crowdsec_status,
+                    'crowdsec-firewall-status'=> $crowdsec_firewall_status
+                ]);
+            break;
         default;
             echo $default;
     }

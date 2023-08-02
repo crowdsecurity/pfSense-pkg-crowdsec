@@ -544,6 +544,37 @@ const CrowdSec = (function () {
         _initTab(id, action, dataCallback);
     }
 
+    function initService () {
+        $.ajax({
+            url: api_url,
+            cache: false,
+            dataType: 'json',
+            data: {action: 'services-status'},
+            type: 'POST',
+            method: 'POST',
+            success: function(data) {
+                // TODO handle errors
+                console.log(data);
+
+                var crowdsecStatus = data['crowdsec-status'];
+                if (crowdsecStatus === 'unknown') {
+                    crowdsecStatus = '<span class="text-danger">Unknown</span>';
+                } else {
+                    crowdsecStatus = _yesno2html(crowdsecStatus === 'running');
+                }
+                $('#crowdsec-status').html(crowdsecStatus);
+
+                var crowdsecFirewallStatus = data['crowdsec-firewall-status'];
+                if (crowdsecFirewallStatus === 'unknown') {
+                    crowdsecFirewallStatus = '<span class="text-danger">Unknown</span>';
+                } else {
+                    crowdsecFirewallStatus = _yesno2html(crowdsecFirewallStatus === 'running');
+                }
+                $('#crowdsec-firewall-status').html(crowdsecFirewallStatus);
+            }
+        })
+    }
+
     function deleteDecision(decisionId) {
         const $modal = $('#remove-decision-modal');
         const action = 'status-decision-delete';
@@ -726,6 +757,7 @@ const CrowdSec = (function () {
     return {
         deleteDecision: deleteDecision,
         initStatus: initStatus,
-        initMetrics: initMetrics
+        initMetrics: initMetrics,
+        initService: initService
     };
 }());
