@@ -465,9 +465,9 @@ const CrowdSec = (function () {
         _initTab(id, action, dataCallback);
     }
 
-    function _initMetricsLapiAlerts() {
-        const action = 'metrics-lapi-alerts-list';
-        const id = "#tab-metrics-lapi-alerts";
+    function _initMetricsAlerts() {
+        const action = 'metrics-alerts-list';
+        const id = "#tab-metrics-alerts";
         const dataCallback = function (data) {
             const rows = [];
             if(data.alerts) {
@@ -693,8 +693,8 @@ const CrowdSec = (function () {
             case '#tab-metrics-decisions':
                 _initMetricsDecisions();
                 break;
-            case '#tab-metrics-lapi-alerts':
-                _initMetricsLapiAlerts();
+            case '#tab-metrics-alerts':
+                _initMetricsAlerts();
                 break;
             default:
                 _initMetricsAcquisition();
@@ -775,8 +775,8 @@ const CrowdSec = (function () {
                     case 'tab-metrics-decisions':
                         _initMetricsDecisions();
                         break;
-                    case 'tab-metrics-lapi-alerts':
-                        _initMetricsLapiAlerts();
+                    case 'tab-metrics-alerts':
+                        _initMetricsAlerts();
                         break;
                     default:
                         _initMetricsAcquisition();

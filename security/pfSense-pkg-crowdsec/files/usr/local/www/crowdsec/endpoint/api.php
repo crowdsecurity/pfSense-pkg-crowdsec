@@ -69,7 +69,7 @@ if ($method === 'DELETE' && isset($_GET['action']) && isset($_GET['decision_id']
         case 'metrics-acquisition-list':
         case 'metrics-bucket-list':
         case 'metrics-parser-list':
-        case 'metrics-lapi-alerts-list':
+        case 'metrics-alerts-list':
         case 'metrics-lapi-machines-list':
         case 'metrics-lapi-list':
         case 'metrics-lapi-bouncers-list':

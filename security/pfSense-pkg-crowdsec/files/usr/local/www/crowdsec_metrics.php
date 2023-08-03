@@ -70,11 +70,11 @@ $content = <<<EOT
     <li><a href="#tab-metrics-acquisition">Acquisition</a></li>
     <li><a href="#tab-metrics-bucket">Bucket</a></li>
     <li><a href="#tab-metrics-parser">Parser</a></li>
+    <li><a href="#tab-metrics-alerts">Alerts</a></li>
     <li><a href="#tab-metrics-decisions">Decisions</a></li>
     <li><a href="#tab-metrics-lapi">Local API</a></li>
     <li><a href="#tab-metrics-lapi-machines">Local API machines</a></li>
     <li><a href="#tab-metrics-lapi-bouncers">Local API bouncers</a></li>
-    <li><a href="#tab-metrics-lapi-alerts">Local API alerts</a></li>
   </ul>
   <div class="loading"><i class="fa fa-spinner fa-spin"></i>Loading, please wait..</div>
   <div id="tab-metrics-acquisition">
@@ -132,6 +132,22 @@ $content = <<<EOT
             </tr>
         </tfoot>
     </table>
+  </div>
+  <div id="tab-metrics-alerts">
+    <table id="table-metrics-alerts" class="table table-condensed table-hover table-striped crowdsecTable">
+            <thead>
+                <tr>
+                 <th data-column-id="reason" data-order="asc">Reason</th>
+                 <th data-column-id="count" data-type="numeric">Count</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+            <tfoot>
+                <tr>
+                </tr>
+            </tfoot>
+        </table>
   </div>
    <div id="tab-metrics-decisions">
     <table id="table-metrics-decisions" class="table table-condensed table-hover table-striped crowdsecTable">
@@ -194,22 +210,6 @@ $content = <<<EOT
                    <th data-column-id="route">Route</th>
                     <th data-column-id="method">Method</th>
                     <th data-column-id="hits" data-type="numeric">Hits</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-            <tfoot>
-                <tr>
-                </tr>
-            </tfoot>
-        </table>
-  </div>
-  <div id="tab-metrics-lapi-alerts">
-    <table id="table-metrics-lapi-alerts" class="table table-condensed table-hover table-striped crowdsecTable">
-            <thead>
-                <tr>
-                 <th data-column-id="reason" data-order="asc">Reason</th>
-                 <th data-column-id="count" data-type="numeric">Count</th>
                 </tr>
             </thead>
             <tbody>
