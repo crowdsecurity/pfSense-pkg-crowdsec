@@ -7,5 +7,8 @@
 		<website>https://www.crowdsec.net/</website>
 		<version>%%PKGVERSION%%</version>
 		<configurationfile>crowdsec.xml</configurationfile>
+		<logging>
+			<logfilename>crowdsec.log</logfilename>
+		</logging>
 	</package>
 </pfsensepkgs>
