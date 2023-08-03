@@ -53,30 +53,29 @@ $content = <<<EOT
 
 <div class="content-box tab-content">
     <div id="introduction" class="tab-pane fade in active">
-        <h1>Quick Start</h1>
+        <h2>Quick Start</h2>
 
         <p>
             Go to the <a href="pkg_edit.php?xml=crowdsec.xml">Settings</a> tab and enable <b>Log Processor</b> and <b>Firewall Bouncer</b>. Click Save.
         </p>
 
         <p>
-            Ignore the post-installation message from the crowdsec package and the firewall bouncer, when it asks
-            to enable/start the services with <em>sysrc</em> or <em>/etc/rc.conf</em> because it's only
-            required in vanilla freebsd.
+            Do not use the commands "sysrc" or "service" to enable and start the crowdsec or bouncer
+            services, it is not required with pfSense. Do not create a <code>pf.conf</code> file.
+            If you edit the configuration files, some setting may be overwritten by the pfsense package.
         </p>
 
         <p>
-            At the moment, this package is fully functional on the
-            command line but the web interface is limited; you can only list the installed objects and revoke
-            <a href="https://docs.crowdsec.net/docs/user_guides/decisions_mgmt/">decisions</a>. For anything else
-            you need the shell or the <a href="https://app.crowdsec.net">CrowdSec Console</a>.
-            For simple things, <a href="diag_command.php">Diagnostics/Command Prompt</a> works as well.
+            CrowdSec on pfSense is fully functional from the command line but the web interface
+            is read-only, with the exception of decision revocation (unban).
+            Most actions require the shell or the <a href="https://app.crowdsec.net">CrowdSec Console</a>.
+            For simple things, <a href="diag_command.php">Diagnostics/Command Prompt</a> works as well as ssh.
         </p>
 
-        <h1>Walkthrough</h1>
+        <h2>Walkthrough</h2>
 
         <p>If you are reading this, a CrowdSec <a href="https://doc.crowdsec.net/docs/next/getting_started/security_engine_intro">Security Engine</a>
-        (threat detection), and a <a href="https://docs.crowdsec.net/docs/bouncers/firewall/">Firewall Bouncer</a> (remediation) are already installed
+        (threat detection) and a <a href="https://docs.crowdsec.net/docs/bouncers/firewall/">Firewall Bouncer</a> (remediation) are already installed
         in your pfSense machine.</p>
 
         The following protections are enabled by default on all interfaces:
