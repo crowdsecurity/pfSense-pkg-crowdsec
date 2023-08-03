@@ -62,15 +62,15 @@
             <type>listtopic</type>
         </field>
         <field>
-            <fielddescr>Enable</fielddescr>
+            <fielddescr>Enable log processor</fielddescr>
             <fieldname>enable_agent</fieldname>
             <type>checkbox</type>
-            <description></description>
+            <description>Enable or disable the log processor. This service reads logs from pfSense and its packages to detect threats. Recommended.</description>
         </field>
         <field>
             <fielddescr>Log level</fielddescr>
             <fieldname>agent_log_level</fieldname>
-            <description><![CDATA[]]></description>
+            <description>Log level for crowdsec.log and crowdsec_api.log</description>
             <type>select</type>
             <options>
                 <option><name>Debug</name><value>debug</value></option>
@@ -84,7 +84,7 @@
             <fielddescr>Metrics port</fielddescr>
             <fieldname>metrics_port</fieldname>
             <type>input</type>
-            <description></description>
+            <description>Where to expose metrics that can be consumed for monitoring (prometheus, grafana etc.). Change in case of conflict.</description>
             <default_value>6060</default_value>
             <required>true</required>
         </field>
@@ -97,12 +97,12 @@
             <fielddescr>Enable firewall bouncer</fielddescr>
             <fieldname>enable_fw_bouncer</fieldname>
             <type>checkbox</type>
-            <description></description>
+            <description>Add the malevolent IPs coming from the log processor or the community/third party blocklists to the pfSense firewall. It's the main advantage of having CrowdSec on pfSense, so it's recommended.</description>
         </field>
         <field>
             <fielddescr>Log level</fielddescr>
             <fieldname>firewall_bouncer_log_level</fieldname>
-            <description><![CDATA[]]></description>
+            <description>Log level for crowdsec-firewall-bouncer.log</description>
             <type>select</type>
             <options>
                 <option><name>Debug</name><value>debug</value></option>
@@ -114,50 +114,50 @@
         </field>
 
         <field>
-            <name>Security Engine (LAPI)</name>
+            <name>Security Engine (CrowdSec LAPI)</name>
             <type>listtopic</type>
-        </field>
-        <field>
-            <fielddescr>LAPI port</fielddescr>
-            <fieldname>lapi_port</fieldname>
-            <type>input</type>
-            <description>Pick the port for the LAPI endpoint.</description>
-            <default_value>8080</default_value>
-            <required>true</required>
         </field>
         <field>
             <fielddescr>LAPI host</fielddescr>
             <fieldname>lapi_host</fieldname>
             <type>input</type>
-            <description>Set the LAPI endpoint host or ip.</description>
+            <description>Host name or IP. Change this to expose the LAPI to the LAN. For example you can have one or more servers running only the Log Processor (agent) which report to the LAPI in this pfSense machine. Otherwise, leave the default value (127.0.0.1).</description>
             <default_value>127.0.0.1</default_value>
+            <required>true</required>
+        </field>
+        <field>
+            <fielddescr>LAPI port</fielddescr>
+            <fieldname>lapi_port</fieldname>
+            <type>input</type>
+            <description>Port number for the LAPI endpoint. Change in case of conflict with other services.</description>
+            <default_value>8080</default_value>
             <required>true</required>
         </field>
         <field>
             <fielddescr>LAPI is remote</fielddescr>
             <fieldname>lapi_is_remote</fieldname>
             <type>checkbox</type>
-            <description></description>
-            <combinefields>begin</combinefields>
+            <description><![CDATA[If enabled, the above values "LAPI host" and "LAPI port" refer to a different machine than pfSense. You will need to register the log processor and the bouncer from the shell, then report here their connection credentials.<br>Valid use cases:<br><ul><li>you have a pre-existing installation, maybe running on linux</li><li>you want more control over the configuration, backup/restore, need a bigger machine or a postgres database</li><li>you want more control over the running versions or want to run it on docker, k8s</li></ul>]]></description>
             <enablefields>agent_user,agent_password,fw_bouncer_api_key</enablefields>
         </field>
         <field>
             <fielddescr>Agent user</fielddescr>
             <fieldname>agent_user</fieldname>
             <type>input</type>
-            <description>Set the name of the remote agent</description>
+            <description>Name of this machine in the remote LAPI</description>
+            <combinefields>begin</combinefields>
         </field>
         <field>
             <fielddescr>Agent password</fielddescr>
             <fieldname>agent_password</fieldname>
             <type>password</type>
-            <description>Set the password of the remote agent</description>
+            <description>Password of this machine in the remote LAPI</description>
         </field>
         <field>
             <fielddescr>Firewall bouncer API key</fielddescr>
             <fieldname>fw_bouncer_api_key</fieldname>
             <type>password</type>
-            <description>Set the remote firewall bouncer API key</description>
+            <description>API key of this bouncer in the remote LAPI</description>
             <combinefields>end</combinefields>
         </field>
         <!-- Crowdsec IPv4 blocklist settings -->
@@ -169,7 +169,7 @@
             <fielddescr>Description</fielddescr>
             <fieldname>block_v4_info</fieldname>
             <type>info</type>
-            <description><![CDATA[Add a pfctl rule: <i>block drop {direction} {log} quick inet from crowdsec_blacklists to any label "CrowdSec IPv4" tag {tag}</i>]]></description>
+            <description><![CDATA[Add a pfctl rule: <i>block drop {direction} {log} quick inet from crowdsec_blacklists to any label "CrowdSec IPv4" tag {tag}</i>.<br>The rule will be hidden in the pfSense interface.]]></description>
         </field>
         <field>
             <fielddescr>Enable CrowdSec IPv4 blocklist rule</fielddescr>
@@ -180,7 +180,7 @@
         <field>
             <fielddescr>Direction</fielddescr>
             <fieldname>block_v4_direction</fieldname>
-            <description><![CDATA[]]></description>
+            <description></description>
             <type>select</type>
             <options>
                 <option><name>Any</name><value>any</value></option>
@@ -208,7 +208,7 @@
             <fielddescr>Description</fielddescr>
             <fieldname>block_v6_info</fieldname>
             <type>info</type>
-            <description><![CDATA[Add a pfctl rule: <i>block drop {direction} {log} quick inet6 from crowdsec6_blacklists to any label "CrowdSec IPv6" tag {tag}</i>]]></description>
+            <description><![CDATA[Add a pfctl rule: <i>block drop {direction} {log} quick inet6 from crowdsec6_blacklists to any label "CrowdSec IPv6" tag {tag}</i>.<br>The rule will be hidden in the pfSense interface.]]></description>
         </field>
         <field>
             <fielddescr>Enable CrowdSec IPv6 blocklist rule</fielddescr>
@@ -219,7 +219,7 @@
         <field>
             <fielddescr>Direction</fielddescr>
             <fieldname>block_v6_direction</fieldname>
-            <description><![CDATA[]]></description>
+            <description></description>
             <type>select</type>
             <options>
                 <option><name>Any</name><value>any</value></option>
