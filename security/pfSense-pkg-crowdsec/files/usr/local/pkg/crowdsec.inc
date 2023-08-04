@@ -279,7 +279,7 @@ function crowdsec_resync_config()
             }
         }
         // Start service
-        mwexec('service crowdsec restart');
+        mwexec('service crowdsec start');
     } else {
         // Disable service
         mwexec('service crowdsec stop');
@@ -343,7 +343,7 @@ function crowdsec_resync_config()
             }
         }
         // Start service
-        mwexec('service crowdsec_firewall restart');
+        mwexec('service crowdsec_firewall start');
     } else {
         // Disable service
         mwexec('service crowdsec_firewall stop');
