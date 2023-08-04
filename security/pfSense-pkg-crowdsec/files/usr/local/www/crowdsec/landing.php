@@ -1,6 +1,6 @@
 <?php
 /*
- * crowdsec_landing.php
+ * crowdsec/landing.php
  *
  * Copyright (c) 2020-2023 Crowdsec
  * All rights reserved.
@@ -31,10 +31,10 @@ $shortcut_section = "crowdsec";
 include("head.inc");
 
 $tab_array = array();
-$tab_array[] = array("Read me", true, "/crowdsec_landing.php");
+$tab_array[] = array("Read me", true, "/crowdsec/landing.php");
 $tab_array[] = array("Settings", false, "/pkg_edit.php?xml=crowdsec.xml&amp;id=0");
-$tab_array[] = array("Status", false, "/crowdsec_status.php");
-$tab_array[] = array("Metrics", false, "/crowdsec_metrics.php");
+$tab_array[] = array("Status", false, "/crowdsec/status.php");
+$tab_array[] = array("Metrics", false, "/crowdsec/metrics.php");
 display_top_tabs($tab_array);
 
 
@@ -56,7 +56,8 @@ $content = <<<EOT
         <h2>Quick Start</h2>
 
         <p>
-            Go to the <a href="pkg_edit.php?xml=crowdsec.xml">Settings</a> tab and enable <b>Log Processor</b> and <b>Firewall Bouncer</b>. Click Save.
+            Go to the <a href="/pkg_edit.php?xml=crowdsec.xml">Settings</a> tab and enable <b>Log Processor</b> and 
+            <b>Firewall Bouncer</b>. Click Save.
         </p>
 
         <p>
@@ -69,7 +70,7 @@ $content = <<<EOT
             CrowdSec on pfSense is fully functional from the command line but the web interface
             is read-only, with the exception of decision revocation (unban).
             Most actions require the shell or the <a href="https://app.crowdsec.net">CrowdSec Console</a>.
-            For simple things, <a href="diag_command.php">Diagnostics/Command Prompt</a> works as well as ssh.
+            For simple things, <a href="/diag_command.php">Diagnostics/Command Prompt</a> works as well as ssh.
         </p>
 
         <h2>Walkthrough</h2>
@@ -119,7 +120,7 @@ $content = <<<EOT
 
         <h3>Status page</h3>
 
-        <p>In the <a href="crowdsec_status.php">Status</a> tab, you can see</p>
+        <p>In the <a href="/crowdsec/status.php">Status</a> tab, you can see</p>
 
         <ul>
             <li>Registered log processors and bouncers (at least one of each, running on pfSense)</li>
@@ -134,7 +135,7 @@ $content = <<<EOT
         </p>
 
         <p>
-            In the <a href="crowdsec_metrics.php">Metrics</a> tab you can check if the logs are acquired and the
+            In the <a href="/crowdsec/metrics.php">Metrics</a> tab you can check if the logs are acquired and the
             events are triggered correctly. For real monitoring, you can fetch the same metrics with
             <a href="https://docs.crowdsec.net/docs/observability/prometheus/">Prometheus (Grafana dashboard included)</a>,
             Telegraf or your favorite solution.
@@ -143,21 +144,23 @@ $content = <<<EOT
         <h3>Logs and service management</h3>
 
         <p>
-            You can see the Security Engine logs in <a href="status_logs_packages.php?pkg=crowdsec">Status/System Logs/Packages/crowdsec</a>.
+            You can see the Security Engine logs in <a href="/status_logs_packages.php?pkg=crowdsec">Status/System 
+            Logs/Packages/crowdsec</a>.
             These are in <code>/var/log/crowdsec.log</code>.
             The logs for the LAPI and bouncer are not available from the UI, they are in <code>crowdsec_api.log</code> and <code>crowdsec-firewall-bouncer.log</code>.
         </p>
 
         <p>
-            Both services can be restarted from <a href="status_services.php">Status/Services</a>.
+            Both services can be restarted from <a href="/status_services.php">Status/Services</a>.
             The equivalent shell commands are "service crowdsec status/start/stop/reload/restart" and "service crowdsec_firewall status/start/stop/restart".
-            They can be run from <a href="diag_command.php">Diagnostics/Command Prompt</a> as well as from ssh.
+            They can be run from <a href="/diag_command.php">Diagnostics/Command Prompt</a> as well as from ssh.
         </p>
 
         <h3>View blocked IPs</h3>
 
         <p>
-            You can see the tables of the blocked IPs in <a href="diag_tables.php">Diagnostics/Tables</a> or from the shell, with the commands
+            You can see the tables of the blocked IPs in <a href="/diag_tables.php">Diagnostics/Tables</a> or from 
+            the shell, with the commands
             <code>pfctl -T show -t crowdsec_blacklists</code> (IPv4) and <code>pfctl -T show -t crowdsec6_blacklists</code> (IPv6).
         </p>
 
@@ -199,7 +202,7 @@ $content = <<<EOT
 
         <p>
             You may have to disable the <b>Anti-lockout</b> rule in
-            <a href="system_advanced_admin.php">System/Advanced/Admin Access</a> for the
+            <a href="/system_advanced_admin.php">System/Advanced/Admin Access</a> for the
             time of the test.
 	</p>
 

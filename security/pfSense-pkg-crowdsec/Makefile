@@ -37,12 +37,12 @@ do-install:
 	${MKDIR} ${STAGEDIR}${PREFIX}/etc/rc.d/
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/crowdsec.xml \
 		${STAGEDIR}${PREFIX}/pkg
-	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/www/crowdsec_landing.php \
-    		${STAGEDIR}${PREFIX}/www
-	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/www/crowdsec_status.php \
-			${STAGEDIR}${PREFIX}/www
-	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/www/crowdsec_metrics.php \
-            			${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/www/crowdsec/landing.php \
+    		${STAGEDIR}${PREFIX}/www/crowdsec
+	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/www/crowdsec/status.php \
+			${STAGEDIR}${PREFIX}/www/crowdsec
+	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/www/crowdsec/metrics.php \
+            			${STAGEDIR}${PREFIX}/www/crowdsec
 	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/www/crowdsec/endpoint/api.php \
           			${STAGEDIR}${PREFIX}/www/crowdsec/endpoint
 	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/www/crowdsec/js/crowdsec.js \
