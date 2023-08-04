@@ -30,7 +30,7 @@
     <menu>
         <name>CrowdSec</name>
         <section>Services</section>
-        <url>/crowdsec_landing.php</url>
+        <url>/crowdsec/landing.php</url>
     </menu>
     <service>
         <name>crowdsec</name>
@@ -40,7 +40,7 @@
     <tabs>
         <tab>
             <text>CrowdSec</text>
-            <url>/crowdsec_landing.php</url>
+            <url>/crowdsec/landing.php</url>
         </tab>
         <tab>
             <text>Settings</text>
@@ -49,11 +49,11 @@
         </tab>
         <tab>
             <text>Status</text>
-            <url>/crowdsec_status.php</url>
+            <url>/crowdsec/status.php</url>
         </tab>
         <tab>
             <text>Metrics</text>
-            <url>/crowdsec_metrics.php</url>
+            <url>/crowdsec/metrics.php</url>
         </tab>
     </tabs>
     <fields>
@@ -190,6 +190,13 @@
             <type>input</type>
             <required>true</required>
             <default_value>6060</default_value>
+        </field>
+        <field>
+            <fielddescr>Port (firewall bouncer)</fielddescr>
+            <fieldname>metrics_firewall_port</fieldname>
+            <type>input</type>
+            <required>true</required>
+            <default_value>60601</default_value>
         </field>
 
         <!-- Crowdsec IPv4 blocklist settings -->

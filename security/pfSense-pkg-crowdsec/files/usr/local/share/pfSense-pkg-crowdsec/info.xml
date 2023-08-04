@@ -8,7 +8,7 @@
 		<version>%%PKGVERSION%%</version>
 		<configurationfile>crowdsec.xml</configurationfile>
 		<logging>
-			<logfilename>crowdsec.log</logfilename>
+			<logfilename>crowdsec/crowdsec.log</logfilename>
 		</logging>
 	</package>
 </pfsensepkgs>
