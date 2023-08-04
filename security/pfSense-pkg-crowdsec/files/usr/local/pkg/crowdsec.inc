@@ -71,7 +71,13 @@ function crowdsec_validate_form($post, &$input_errors)
     if (!empty($post['metrics_port'])) {
         $metrics_port = $post['metrics_port'];
         if (!is_numeric($metrics_port)) {
-            $input_errors[] = 'Metrics port must be a numeric value.';
+            $input_errors[] = 'Metrics port (crowdsec) must be a numeric value.';
+        }
+    }
+    if (!empty($post['metrics_firewall_port'])) {
+        $metrics_firewall_port = $post['metrics_firewall_port'];
+        if (!is_numeric($metrics_firewall_port)) {
+            $input_errors[] = 'Metrics port (firewall bouncer) must be a numeric value.';
         }
     }
     // Use external LAPI
@@ -294,6 +300,14 @@ function crowdsec_resync_config()
                 $candidate_level = $cf['firewall_bouncer_log_level'];
                 if ($candidate_level !== $fw_log_level) {
                     $fw_conf['log_level'] = $candidate_level;
+                    $update_fw_flag = true;
+                }
+            }
+            if (!empty($cf['metrics_firewall_port'])) {
+                $fw_metrics_port = $fw_conf['prometheus']['listen_port'] ?? 6060;
+                $candidate_port = $cf['metrics_firewall_port'];
+                if ($candidate_port !== $fw_metrics_port) {
+                    $fw_conf['prometheus']['listen_port'] = (int)$candidate_port;
                     $update_fw_flag = true;
                 }
             }
