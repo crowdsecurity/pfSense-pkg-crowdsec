@@ -194,6 +194,7 @@ function crowdsec_resync_config()
 {
     $cf = config_get_path('installedpackages/crowdsec/config/0', []);
     $candidate_log_dir = '/var/log/crowdsec/';
+    $candidate_log_max_size = 999999;
     // Handle crowdsec service start
     if (!empty($cf['enable_agent'])) {
         // Enable service
@@ -263,6 +264,11 @@ function crowdsec_resync_config()
                 $agent_conf['common']['log_dir'] = $candidate_log_dir;
                 $update_agent_flag = true;
             }
+            $agent_log_max_size = $agent_conf['common']['log_max_size'] ?? $candidate_log_max_size;
+            if ($candidate_log_max_size !== $agent_log_max_size) {
+                $agent_conf['common']['log_max_size'] = $candidate_log_max_size;
+                $update_agent_flag = true;
+            }
             if ($update_agent_flag) {
                 try {
                     $yaml = Yaml::dump($agent_conf, 4);
@@ -320,6 +326,11 @@ function crowdsec_resync_config()
             $fw_log_dir = $fw_conf['log_dir'] ?? $candidate_log_dir;
             if ($candidate_log_dir !== $fw_log_dir) {
                 $fw_conf['log_dir'] = $candidate_log_dir;
+                $update_fw_flag = true;
+            }
+            $fw_log_max_size = $fw_conf['log_max_size'] ?? $candidate_log_max_size;
+            if ($candidate_log_max_size !== $fw_log_max_size) {
+                $fw_conf['log_max_size'] = $candidate_log_max_size;
                 $update_fw_flag = true;
             }
             if ($update_fw_flag) {
