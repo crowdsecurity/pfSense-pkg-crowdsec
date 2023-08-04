@@ -193,6 +193,7 @@ function crowdsec_deinstall()
 function crowdsec_resync_config()
 {
     $cf = config_get_path('installedpackages/crowdsec/config/0', []);
+    $candidate_log_dir = '/var/log/crowdsec/';
     // Handle crowdsec service start
     if (!empty($cf['enable_agent'])) {
         // Enable service
@@ -257,6 +258,11 @@ function crowdsec_resync_config()
                     $update_agent_flag = true;
                 }
             }
+            $agent_log_dir = $agent_conf['common']['log_dir'] ?? $candidate_log_dir;
+            if ($candidate_log_dir !== $agent_log_dir) {
+                $agent_conf['common']['log_dir'] = $candidate_log_dir;
+                $update_agent_flag = true;
+            }
             if ($update_agent_flag) {
                 try {
                     $yaml = Yaml::dump($agent_conf, 4);
@@ -267,7 +273,7 @@ function crowdsec_resync_config()
             }
         }
         // Start service
-        mwexec('service crowdsec start');
+        mwexec('service crowdsec restart');
     } else {
         // Disable service
         mwexec('service crowdsec stop');
@@ -311,6 +317,11 @@ function crowdsec_resync_config()
                     $update_fw_flag = true;
                 }
             }
+            $fw_log_dir = $fw_conf['log_dir'] ?? $candidate_log_dir;
+            if ($candidate_log_dir !== $fw_log_dir) {
+                $fw_conf['log_dir'] = $candidate_log_dir;
+                $update_fw_flag = true;
+            }
             if ($update_fw_flag) {
                 try {
                     $yaml = Yaml::dump($fw_conf, 4);
@@ -321,7 +332,7 @@ function crowdsec_resync_config()
             }
         }
         // Start service
-        mwexec('service crowdsec_firewall start');
+        mwexec('service crowdsec_firewall restart');
     } else {
         // Disable service
         mwexec('service crowdsec_firewall stop');
