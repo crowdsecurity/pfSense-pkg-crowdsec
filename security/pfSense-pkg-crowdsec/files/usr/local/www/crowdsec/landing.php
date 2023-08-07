@@ -53,7 +53,22 @@ $content = <<<EOT
 
 <div class="content-box tab-content">
     <div id="introduction" class="tab-pane fade in active">
+        <img src="images/crowdsec.png" height="80" alt="CrowdSec logo with 3 purple and orange alpacas crowd in purple sec in orange" />
+
         <h2>Quick Start</h2>
+
+        <p>
+           Ensure that you are <a href="https://docs.netgate.com/pfsense/en/latest/config/advanced-misc.html#ram-disk-settings">not using a RAM disk</a>
+           for the /var directory. We need it to keep the persistent CrowdSec + GeoIP databases.
+           With a RAM disk, you can still do threat analysis and remediation but you'll need to connect to
+           an existing CrowdSec instance.
+        </p>
+
+        <p>
+            If disk space is not an issue, <a href="https://docs.netgate.com/pfsense/en/latest/monitoring/logs/size.html">increase the maximum size</a>
+            of log files before they are compressed and rotated. This will help us if you report some issue and we need to
+            match the application behavior with the content of the acquired logs.
+        </p>
 
         <p>
             Go to the <a href="/pkg_edit.php?xml=crowdsec.xml">Settings</a> tab and enable <b>Log Processor</b> and 
