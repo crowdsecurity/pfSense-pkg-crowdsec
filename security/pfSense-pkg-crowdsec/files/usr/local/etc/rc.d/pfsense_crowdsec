@@ -51,7 +51,7 @@ pfsense_crowdsec_restart () {
     pfsense_crowdsec_start
 }
 
-pfsense_crowdsec/status () {
+pfsense_crowdsec_status () {
     # return error if at least one program is not running
     service crowdsec status
     ret=$?
@@ -91,7 +91,7 @@ case $1 in
       exit $?
       ;;
    status)
-      pfsense_crowdsec/status
+      pfsense_crowdsec_status
       exit $?
       ;;
    reload)

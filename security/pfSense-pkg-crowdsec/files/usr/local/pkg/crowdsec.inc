@@ -31,6 +31,8 @@ use Symfony\Component\Yaml\Exception\DumpException;
 define('CROWDSEC_LAPI_CONF', '/usr/local/etc/crowdsec/local_api_credentials.yaml');
 define('CROWDSEC_AGENT_CONF', '/usr/local/etc/crowdsec/config.yaml');
 define('CROWDSEC_FIREWALL_CONF', '/usr/local/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml');
+define('CROWDSEC_SETTINGS_NOTICE', '/usr/local/www/crowdsec/settings-notice.txt');
+define('CROWDSEC_PFSENSE_COLLECTION', '/usr/local/etc/crowdsec/collections/pfsense.yaml');
 
 $g['disablehelpicon'] = true;
 
@@ -234,7 +236,7 @@ function crowdsec_resync_config()
         } catch (ParseException $exception) {
             syslog(LOG_ERR, 'Unable to parse ' . CROWDSEC_AGENT_CONF . ': ' . $exception->getMessage());
         }
-        if(!empty($agent_conf)){
+        if (!empty($agent_conf)) {
             if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
                 $agent_url = $agent_conf['api']['server']['listen_uri'] ?? '';
                 $candidate_url = $cf['lapi_host'] . ':' . $cf['lapi_port'];
@@ -298,7 +300,7 @@ function crowdsec_resync_config()
         } catch (ParseException $exception) {
             syslog(LOG_ERR, 'Unable to parse ' . CROWDSEC_FIREWALL_CONF . ': ' . $exception->getMessage());
         }
-        if(!empty($fw_conf)){
+        if (!empty($fw_conf)) {
             if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
                 $fw_url = $fw_conf['api_url'] ?? '';
                 $candidate_url = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'] . '/';
@@ -349,6 +351,104 @@ function crowdsec_resync_config()
         mwexec('service crowdsec_firewall stop');
         mwexec('service crowdsec_firewall disable');
     }
+    if ($_POST) {
+        $notice_content = 'Settings saved.' .PHP_EOL;
+        if (!empty($cf['enable_agent']) || !empty($cf['enable_fw_bouncer'])) {
+            sleep(2);
+            $crowdsec = trim(shell_exec("service crowdsec onestatus"));
+            $crowdsec_status = strpos($crowdsec, "is running") > 0 ? "running" : "not running";
+            // Handle crowdsec service
+            if (!empty($cf['enable_agent'])){
+                if($crowdsec_status !== 'running'){
+                    $notice_content .= 'Crowdsec service is not running. Please check logs.' .PHP_EOL;
+                }
+                else {
+                    // Handle pfsense collection
+                    if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
+                        try {
+                            $agent_conf = Yaml::parse(file_get_contents(CROWDSEC_AGENT_CONF));
+                        } catch (ParseException $exception) {
+                            syslog(LOG_ERR, 'Unable to parse ' . CROWDSEC_AGENT_CONF . ': ' . $exception->getMessage());
+                        }
+                        if (!empty($agent_conf)) {
+                            $agent_conf['cscli']['hub_branch'] = "pfsense-gui";
+                            try {
+                                $yaml = Yaml::dump($agent_conf, 4);
+                                file_put_contents(CROWDSEC_AGENT_CONF, $yaml);
+                            } catch (DumpException $exception) {
+                                syslog(LOG_ERR, 'Unable to dump ' . CROWDSEC_AGENT_CONF . ': ' . $exception->getMessage());
+                            }
+                            shell_exec("cscli hub update");
+                            shell_exec("cscli collections install crowdsecurity/pfsense");
+                            shell_exec("service crowdsec reload");
+                            sleep(2);
+                            $crowdsec_status = strpos($crowdsec, "is running") > 0 ? "running" : "not running";
+
+                            if($crowdsec_status !== 'running'){
+                                $notice_content .= 'Crowdsec service is not running. Please check logs.' .PHP_EOL;
+                            }
+                            else if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
+                                $notice_content .= 'Pfsense collection is missing. Please check logs.' .PHP_EOL;
+                            }
+                            else {
+                                $notice_content .= 'Installed collection crowdsecurity/pfsense.' . PHP_EOL;
+                            }
+                        }
+                    }
+                }
+            }
+            // Handle firewall bouncer
+            if(!empty($cf['enable_fw_bouncer'])){
+                $crowdsec_firewall = trim(shell_exec("service crowdsec_firewall onestatus"));
+                $crowdsec_firewall_status = strpos($crowdsec_firewall, "is running") > 0 ? "running" : "not running";
+                if($crowdsec_firewall_status !== 'running'){
+                    $notice_content .= 'Crowdsec firewall bouncer is not running. Please check logs.' .PHP_EOL;
+                }
+            }
+        }
+        if (config_path_enabled('system','use_mfs_tmpvar')) {
+            $notice_content .= "pfsense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can modify this settings <a href='/system_advanced_misc.php'>in this page.</a" .PHP_EOL;
+        }
+        file_put_contents(CROWDSEC_SETTINGS_NOTICE, $notice_content);
+    }
+
+}
+
+function crowdsec_after_head(){
+
+    $content= <<<EOF
+    <div id="crowdsec-notice" class="alert alert-success" style="display:none;"></div>
+EOF;
+
+    echo $content;
+}
+
+function crowdsec_after_form()
+{
+    $content = '';
+    if (file_exists(CROWDSEC_SETTINGS_NOTICE)) {
+        $file_content = '';
+        $fh = fopen(CROWDSEC_SETTINGS_NOTICE,'r');
+        while ($line = fgets($fh)) {
+            $file_content.= '<p>' . trim($line) .'</p>';
+        }
+        fclose($fh);
+        $file_content = $file_content;
+
+        $content .= <<<EOF
+<script type="text/javascript">
+//<![CDATA[
+	events.push(function() {
+	    $('#crowdsec-notice').show().html("$file_content");
+	});
+//]]>
+</script>
+EOF;
+    }
+
+    echo $content;
+
+    unlink(CROWDSEC_SETTINGS_NOTICE);
 }
 
 /**
