@@ -387,8 +387,11 @@ function crowdsec_resync_config()
                             if($crowdsec_status !== 'running'){
                                 $notice_content .= 'Crowdsec service is not running. Please check logs.' .PHP_EOL;
                             }
-                            if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
+                            else if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
                                 $notice_content .= 'Pfsense collection is missing. Please check logs.' .PHP_EOL;
+                            }
+                            else {
+                                $notice_content .= 'Installed collection crowdsecurity/pfsense.' . PHP_EOL;
                             }
                         }
                     }
