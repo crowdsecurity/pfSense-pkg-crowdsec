@@ -304,6 +304,10 @@
 
     <filter_rules_needed><![CDATA[crowdsec_generate_rules]]></filter_rules_needed>
 
+    <custom_php_after_form_command>crowdsec_after_form();</custom_php_after_form_command>
+
+    <custom_php_after_head_command><![CDATA[crowdsec_after_head();]]></custom_php_after_head_command>
+
     <!--
     <custom_add_php_command></custom_add_php_command>
     <custom_add_php_command_late></custom_add_php_command_late>
@@ -312,8 +316,6 @@
     <custom_delete_php_command></custom_delete_php_command>
     <start_command></start_command>
     <custom_php_service_status_command></custom_php_service_status_command>
-    <custom_php_after_head_command></custom_php_after_head_command>
     <custom_php_command_before_form></custom_php_command_before_form>
-    <custom_php_after_form_command></custom_php_after_form_command>
     -->
 </packagegui>
