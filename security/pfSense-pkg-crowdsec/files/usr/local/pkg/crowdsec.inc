@@ -197,6 +197,109 @@ function crowdsec_resync_config()
     $cf = config_get_path('installedpackages/crowdsec/config/0', []);
     $candidate_log_dir = '/var/log/crowdsec/';
     $candidate_log_max_size = 999999;
+    // Handle remote LAPI ON
+    if (!empty($cf['lapi_is_remote'])) {
+        // Modify AGENT settings (update /usr/local/etc/crowdsec/config.yaml)
+        $agent_conf = [];
+        $update_agent_flag = false;
+        try {
+            $agent_conf = Yaml::parse(file_get_contents(CROWDSEC_AGENT_CONF));
+        } catch (ParseException $exception) {
+            syslog(LOG_ERR, 'Unable to parse ' . CROWDSEC_AGENT_CONF . ': ' . $exception->getMessage());
+        }
+        if (!empty($agent_conf)) {
+            $agent_conf['api']['server']['enable'] = false;
+            $update_agent_flag = true;
+        }
+        if ($update_agent_flag) {
+            try {
+                $yaml = Yaml::dump($agent_conf, 4);
+                file_put_contents(CROWDSEC_AGENT_CONF, $yaml);
+            } catch (DumpException $exception) {
+                syslog(LOG_ERR, 'Unable to dump ' . CROWDSEC_AGENT_CONF . ': ' . $exception->getMessage());
+            }
+        }
+        // Modify LAPI settings (update local_api_credentials.yaml)
+        $lapi_conf = [];
+        $update_lapi_flag = false;
+        try {
+            $lapi_conf = Yaml::parse(file_get_contents(CROWDSEC_LAPI_CONF));
+        } catch (ParseException $exception) {
+            syslog(LOG_ERR, 'Unable to parse ' . CROWDSEC_LAPI_CONF . ': ' . $exception->getMessage());
+        }
+        if (!empty($lapi_conf)) {
+            if (!empty($cf['agent_user']) && !empty($cf['agent_password'])) {
+                $lapi_login = $lapi_conf['login'] ?? '';
+                $candidate_login = $cf['agent_user'];
+                if ($candidate_login !== $lapi_login) {
+                    $lapi_conf['login'] = $candidate_login;
+                    $update_lapi_flag = true;
+                }
+                $lapi_password = $lapi_conf['password'] ?? '';
+                $candidate_password = $cf['agent_password'];
+                if ($candidate_password !== $lapi_password) {
+                    $lapi_conf['password'] = $candidate_password;
+                    $update_lapi_flag = true;
+                }
+            }
+            if ($update_lapi_flag) {
+                try {
+                    $yaml = Yaml::dump($lapi_conf, 4);
+                    file_put_contents(CROWDSEC_LAPI_CONF, $yaml);
+                } catch (DumpException $exception) {
+                    syslog(LOG_ERR, 'Unable to dump ' . CROWDSEC_LAPI_CONF . ': ' . $exception->getMessage());
+                }
+            }
+        }
+        // Modify Firewall bouncer settings (update /usr/local/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml)
+        $fw_conf = [];
+        $update_fw_flag = false;
+        try {
+            $fw_conf = Yaml::parse(file_get_contents(CROWDSEC_FIREWALL_CONF));
+        } catch (ParseException $exception) {
+            syslog(LOG_ERR, 'Unable to parse ' . CROWDSEC_FIREWALL_CONF . ': ' . $exception->getMessage());
+        }
+        if (!empty($fw_conf)) {
+            if (!empty($cf['fw_bouncer_api_key'])) {
+                $fw_api_key = $fw_conf['api_key'] ?? '';
+                $candidate_key = $cf['fw_bouncer_api_key'];
+                if ($candidate_key !== $fw_api_key) {
+                    $fw_conf['api_key'] = $candidate_key;
+                    $update_fw_flag = true;
+                }
+            }
+            if ($update_fw_flag) {
+                try {
+                    $yaml = Yaml::dump($fw_conf, 4);
+                    file_put_contents(CROWDSEC_FIREWALL_CONF, $yaml);
+                } catch (DumpException $exception) {
+                    syslog(LOG_ERR, 'Unable to dump ' . CROWDSEC_FIREWALL_CONF . ': ' . $exception->getMessage());
+                }
+            }
+        }
+    } else { // Handle remote LAPI OFF
+        // Modify AGENT settings (update /usr/local/etc/crowdsec/config.yaml)
+        $agent_conf = [];
+        $update_agent_flag = false;
+        try {
+            $agent_conf = Yaml::parse(file_get_contents(CROWDSEC_AGENT_CONF));
+        } catch (ParseException $exception) {
+            syslog(LOG_ERR, 'Unable to parse ' . CROWDSEC_AGENT_CONF . ': ' . $exception->getMessage());
+        }
+        if (!empty($agent_conf)) {
+            $agent_conf['api']['server']['enable'] = true;
+            $update_agent_flag = true;
+        }
+        if ($update_agent_flag) {
+            try {
+                $yaml = Yaml::dump($agent_conf, 4);
+                file_put_contents(CROWDSEC_AGENT_CONF, $yaml);
+            } catch (DumpException $exception) {
+                syslog(LOG_ERR, 'Unable to dump ' . CROWDSEC_AGENT_CONF . ': ' . $exception->getMessage());
+            }
+        }
+    }
+
     // Handle crowdsec service start
     if (!empty($cf['enable_agent'])) {
         // Enable service
@@ -379,16 +482,16 @@ function crowdsec_resync_config()
                                 syslog(LOG_ERR, 'Unable to dump ' . CROWDSEC_AGENT_CONF . ': ' . $exception->getMessage());
                             }
                             shell_exec("cscli hub update");
-                            shell_exec("cscli collections install crowdsecurity/pfsense");
-                            shell_exec("service crowdsec reload");
-                            sleep(2);
-                            $crowdsec_status = strpos($crowdsec, "is running") > 0 ? "running" : "not running";
+                            exec("cscli --error collections install crowdsecurity/pfsense 2>&1", $output);
 
-                            if($crowdsec_status !== 'running'){
-                                $notice_content .= 'Crowdsec service is not running. Please check logs.' .PHP_EOL;
-                            }
-                            else if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
-                                $notice_content .= 'Pfsense collection is missing. Please check logs.' .PHP_EOL;
+                            shell_exec("service crowdsec reload");
+
+                            if (!empty($output)) {
+                                $notice_content .= 'pfsense collection installation failed:  '. htmlspecialchars
+                                    ($output[0]) . PHP_EOL;
+
+                                $notice_content .= 'Please run <b><i>cscli collections install crowdsecurity/pfsense</i></b> and <b><i>service crowdsec reload</i></b>.'
+                                                   .PHP_EOL;
                             }
                             else {
                                 $notice_content .= 'Installed collection crowdsecurity/pfsense.' . PHP_EOL;
