@@ -289,6 +289,26 @@ function crowdsec_resync_config()
         if ($update_agent_flag) {
             set_yaml_content($agent_conf, CROWDSEC_AGENT_CONF);
         }
+        // Modify Firewall bouncer settings (update /usr/local/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml)
+        $fw_conf = get_yaml_content(CROWDSEC_FIREWALL_CONF);
+        $update_fw_flag = false;
+        if (!empty($fw_conf)) {
+            $fw_api_key = $fw_conf['api_key'] ?? '';
+            $candidate_key = '${API_KEY}';
+            if ($candidate_key !== $fw_api_key) {
+                $fw_conf['api_key'] = $candidate_key;
+                $update_fw_flag = true;
+            }
+            if ($update_fw_flag) {
+                set_yaml_content($fw_conf, CROWDSEC_FIREWALL_CONF);
+            }
+        }
+        mwexec('cscli bouncers delete pfsense-firewall');
+        mwexec('cscli machines delete pfense');
+        mwexec('service crowdsec enable');
+        mwexec('service crowdsec start');
+        mwexec('service crowdsec_firewall enable');
+        mwexec('service crowdsec_firewall start');
     }
 
     // Handle crowdsec service start
@@ -473,7 +493,11 @@ function crowdsec_resync_config()
     }
 
 }
-
+/**
+ * custom_php_after_head_command hook (setting edition after head)
+ *
+ * @return void
+ */
 function crowdsec_after_head(){
 
     $content= <<<EOF
@@ -483,6 +507,11 @@ EOF;
     echo $content;
 }
 
+/**
+ * custom_php_after_form_command hook (setting edition after form)
+ *
+ * @return void
+ */
 function crowdsec_after_form()
 {
     $content = '';
@@ -507,7 +536,6 @@ EOF;
     }
 
     echo $content;
-
     unlink(CROWDSEC_SETTINGS_NOTICE);
 }
 
