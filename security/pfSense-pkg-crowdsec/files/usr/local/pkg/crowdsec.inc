@@ -130,21 +130,11 @@ function crowdsec_install()
     crowdsec_generate_rules('filter');
     filter_configure();
     // Add aliases name in firewall bouncer configuration
-    $fw_conf = [];
-    try {
-        $fw_conf = Yaml::parse(file_get_contents(CROWDSEC_FIREWALL_CONF));
-    } catch (ParseException $exception) {
-        syslog(LOG_ERR, 'Unable to parse ' . CROWDSEC_FIREWALL_CONF . ': ' . $exception->getMessage());
-    }
+    $fw_conf = get_yaml_content(CROWDSEC_FIREWALL_CONF);
     if (!empty($fw_conf)) {
         $fw_conf['blacklists_ipv4'] = $crowdsec_aliases[0]['name'];
         $fw_conf['blacklists_ipv6'] = $crowdsec_aliases[1]['name'];
-        try {
-            $yaml = Yaml::dump($fw_conf, 4);
-            file_put_contents(CROWDSEC_FIREWALL_CONF, $yaml);
-        } catch (DumpException $exception) {
-            syslog(LOG_ERR, 'Unable to dump ' . CROWDSEC_FIREWALL_CONF . ': ' . $exception->getMessage());
-        }
+        set_yaml_content($fw_conf, CROWDSEC_FIREWALL_CONF);
     }
 }
 
@@ -191,6 +181,12 @@ function crowdsec_deinstall()
     filter_configure();
 }
 
+/**
+ * Retrieve yaml content as an array
+ *
+ * @param $filepath
+ * @return array|mixed
+ */
 function get_yaml_content($filepath)
 {
     $result = [];
@@ -203,6 +199,13 @@ function get_yaml_content($filepath)
     return $result;
 }
 
+/**
+ * Write content in a yaml file
+ *
+ * @param $content
+ * @param $filepath
+ * @return void
+ */
 function set_yaml_content($content, $filepath)
 {
     try {
