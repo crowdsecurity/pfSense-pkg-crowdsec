@@ -34,7 +34,6 @@ do-install:
 	${MKDIR} ${STAGEDIR}${PREFIX}/www/crowdsec/endpoint
 	${MKDIR} ${STAGEDIR}/etc/inc/priv
 	${MKDIR} ${STAGEDIR}${DATADIR}
-	${MKDIR} ${STAGEDIR}${PREFIX}/etc/rc.conf.d/
 	${MKDIR} ${STAGEDIR}${PREFIX}/etc/rc.d/
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/crowdsec.xml \
 		${STAGEDIR}${PREFIX}/pkg
@@ -69,9 +68,6 @@ do-install:
 
 	( cd ${FILESDIR}${PREFIX}/pkg/crowdsec && \
 		cp -r ./ ${STAGEDIR}${PREFIX}/pkg/crowdsec )
-
-	${INSTALL_DATA} -m 0744 ${FILESDIR}${PREFIX}/etc/rc.conf.d/* \
-		${STAGEDIR}${PREFIX}/etc/rc.conf.d/
 
 	${INSTALL_DATA} -m 0744 ${FILESDIR}${PREFIX}/etc/rc.d/* \
 		${STAGEDIR}${PREFIX}/etc/rc.d/
