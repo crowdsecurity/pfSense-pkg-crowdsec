@@ -2,7 +2,7 @@
 
 PORTNAME=	pfSense-pkg-crowdsec
 PORTVERSION=	0.0.2
-PORTREVISION=	18
+PORTREVISION=	19
 CATEGORIES=	security
 MASTER_SITES=	# empty
 DISTFILES=	# empty
@@ -35,6 +35,7 @@ do-install:
 	${MKDIR} ${STAGEDIR}/etc/inc/priv
 	${MKDIR} ${STAGEDIR}${DATADIR}
 	${MKDIR} ${STAGEDIR}${PREFIX}/etc/rc.d/
+	${MKDIR} ${STAGEDIR}${PREFIX}/etc/rc.conf.d/
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/crowdsec.xml \
 		${STAGEDIR}${PREFIX}/pkg
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/landing.php \
