@@ -57,18 +57,12 @@ $content = <<<EOT
 
         <h2>Quick Start</h2>
 
-        <p>
+        <div class="alert alert-info">
            Ensure that you are <a href="https://docs.netgate.com/pfsense/en/latest/config/advanced-misc.html#ram-disk-settings">not using a RAM disk</a>
-           for the /var directory. We need it to keep the persistent CrowdSec + GeoIP databases.
-           With a RAM disk, you can still do threat analysis and remediation but you'll need to connect to
-           an existing CrowdSec instance.
-        </p>
-
-        <p>
-            If disk space is not an issue, <a href="https://docs.netgate.com/pfsense/en/latest/monitoring/logs/size.html">increase the maximum size</a>
-            of log files before they are compressed and rotated. This will help us if you report some issue and we need to
-            match the application behavior with the content of the acquired logs.
-        </p>
+           for the /var directory. It contains the persistent CrowdSec database and GeoIP tables.
+           If you really need a RAM disk, you can still do threat analysis and remediation but you will
+           need to connect to an existing CrowdSec instance.
+        </div>
 
         <p>
             Go to the <a href="/pkg_edit.php?xml=crowdsec.xml">Settings</a> tab and enable <b>Log Processor</b> and 
@@ -171,6 +165,12 @@ $content = <<<EOT
             They can be run from <a href="/diag_command.php">Diagnostics/Command Prompt</a> as well as from ssh.
         </p>
 
+        <p>
+            If disk space is not an issue, you can <a href="https://docs.netgate.com/pfsense/en/latest/monitoring/logs/size.html">increase the maximum size</a>
+            of log files before they are compressed and rotated. This will help us in case you report some
+            acquisition issue and we need to match the application behavior with the content of the acquired logs.
+        </p>
+
         <h3>View blocked IPs</h3>
 
         <p>
@@ -180,15 +180,15 @@ $content = <<<EOT
         </p>
 
         <p>
-            For more context, use <code>cscli decisions list -a</code>.
+            To show the same data with more context, use <code>cscli decisions list -a</code>.
         </p>
 
         <h2>Adding data sources</h2>
 
         <p>
-            If a collection, parser or scenario can be applied to a software that you are running on pfSense, you can add it with
-            a <code>cscli collections install ...</code> or equivalent command, then you need to tell CrowdSec where to find the
-            logs.
+            If a collection, parser or scenario can be applied to a software that you are running on pfSense,
+            you can add it with <code>cscli collections install ...</code> or an equivalent command, then
+            you need to tell CrowdSec where to find the logs.
         </p>
 
         <p>
@@ -234,6 +234,28 @@ $content = <<<EOT
             By default the FreeBSD version of CrowdSec does not install any whitelist.
             If you trust your <code>10.0.0.0/8</code>, <code>192.168.0.0/16</code> and <code>172.16.0.0/12</code>
             networks, you can use <code>cscli parers install crowdsecurity/whitelists</code> to whitelist them.
+        </p>
+
+        <h2>Uninstalling</h2>
+
+        <p>
+            In most cases, just remove the <code>crowdsec</code> package from
+            <a href="/pkg_mgr_installed.php">System/Package Manager/Installed Packages</a>.
+            This won't remove the crowdsec database and configuration files, just in case
+            you want to reinstall it later.
+        </p>
+
+        <p>
+            If you need to make sure you removed all traces of CrowdSec, you can run the following commands:
+        </p>
+
+        <pre># pkg remove pfSense-pkg-crowdsec crowdsec crowdsec-firewall-bouncer
+# rm -rf /usr/local/etc/crowdsec /usr/local/etc/rc.conf.d/crowdsec*
+# rm -rf /var/db/crowdsec /var/log/crowdsec* /var/run/crowdsec*</pre>
+
+        <p>
+            For testing purposes, you may want to remove the &lt;crowdsec&gt; section
+            from <code>/conf/config.xml</code> as well.
         </p>
 
         <div>
