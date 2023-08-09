@@ -665,8 +665,12 @@ const CrowdSec = (function () {
                 _initStatusScenarios();
                 break;
             default:
-                _initStatusMachines();
-
+                // First tab is collection for remote lapi
+                if ($('#li-status-machines').length === 0) {
+                    _initStatusCollections();
+                } else {
+                    _initStatusMachines();
+                }
         }
     }
 

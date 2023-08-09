@@ -62,35 +62,12 @@ padding: 10px 10px 0px 10px;
 EOT;
 
 
-$content = <<<EOT
-  <link rel="stylesheet" href="/crowdsec/css/jquery.bootgrid.min.css">
-  <script src="/crowdsec/js/jquery.bootgrid.min.js" defer></script>
-  <script src="/crowdsec/js/jquery.bootgrid.fa.min.js" defer></script>
-  <script src="/crowdsec/js/moment.min.js" defer></script>
-  <script src="/crowdsec/js/crowdsec.js" defer></script>
-    <script>
-    events.push(function() {
-         CrowdSec.initStatus();
-         $('#tabs').show();
-         CrowdSec.initService();
-    });
-    </script>
-<div id="services">
-  Service status: crowdsec <span id="crowdsec-status"><i class="fa fa-spinner fa-spin"></i></span> - firewall bouncer <span id="crowdsec-firewall-status"><i class="fa fa-spinner fa-spin"></i></span>
-</div>
-<div id="tabs" style="display:none;">
-  <ul>
-    <li><a href="#tab-status-machines">Machines</a></li>
-    <li><a href="#tab-status-bouncers">Bouncers</a></li>
-    <li><a href="#tab-status-collections">Collections</a></li>
-    <li><a href="#tab-status-scenarios">Scenarios</a></li>
-    <li><a href="#tab-status-parsers">Parsers</a></li>
-    <li><a href="#tab-status-postoverflows">Postoverflows</a></li>
-    <li><a href="#tab-status-alerts">Alerts</a></li>
-    <li><a href="#tab-status-decisions">Decisions</a></li>
-  </ul>
-  <div class="loading"><i class="fa fa-spinner fa-spin"></i>Loading, please wait..</div>
-  <div id="tab-status-machines">
+$cf = config_get_path('installedpackages/crowdsec/config/0', []);
+$isRemoteLapi = !empty($cf['lapi_is_remote']);
+
+$machinesLi = $isRemoteLapi ? '' : '<li id="li-status-machines"><a href="#tab-status-machines">Machines</a></li>';
+$bouncersLi = $isRemoteLapi ? '' : '<li><a href="#tab-status-bouncers">Bouncers</a></li>';
+$machinesTab = $isRemoteLapi ? '' : '<div id="tab-status-machines">
     <table id="table-status-machines" class="table table-condensed table-hover table-striped crowdsecTable">
             <thead>
                 <tr>
@@ -108,8 +85,8 @@ $content = <<<EOT
                 </tr>
             </tfoot>
         </table>
-  </div>
-  <div id="tab-status-bouncers">
+  </div>';
+$bouncersTab = $isRemoteLapi ? '' : '<div id="tab-status-bouncers">
    <table id="table-status-bouncers" class="table table-condensed table-hover table-striped crowdsecTable">
         <thead>
             <tr>
@@ -128,7 +105,38 @@ $content = <<<EOT
             </tr>
         </tfoot>
     </table>
-  </div>
+  </div>';
+
+$content = <<<EOT
+  <link rel="stylesheet" href="/crowdsec/css/jquery.bootgrid.min.css">
+  <script src="/crowdsec/js/jquery.bootgrid.min.js" defer></script>
+  <script src="/crowdsec/js/jquery.bootgrid.fa.min.js" defer></script>
+  <script src="/crowdsec/js/moment.min.js" defer></script>
+  <script src="/crowdsec/js/crowdsec.js" defer></script>
+    <script>
+    events.push(function() {
+         CrowdSec.initStatus();
+         $('#tabs').show();
+         CrowdSec.initService();
+    });
+    </script>
+<div id="services">
+  Service status: crowdsec <span id="crowdsec-status"><i class="fa fa-spinner fa-spin"></i></span> - firewall bouncer <span id="crowdsec-firewall-status"><i class="fa fa-spinner fa-spin"></i></span>
+</div>
+<div id="tabs" style="display:none;">
+  <ul>
+    $machinesLi
+    $bouncersLi
+    <li><a href="#tab-status-collections">Collections</a></li>
+    <li><a href="#tab-status-scenarios">Scenarios</a></li>
+    <li><a href="#tab-status-parsers">Parsers</a></li>
+    <li><a href="#tab-status-postoverflows">Postoverflows</a></li>
+    <li><a href="#tab-status-alerts">Alerts</a></li>
+    <li><a href="#tab-status-decisions">Decisions</a></li>
+  </ul>
+  <div class="loading"><i class="fa fa-spinner fa-spin"></i>Loading, please wait..</div>
+  $machinesTab
+  $bouncersTab
   <div id="tab-status-collections">
     <table id="table-status-collections" class="table table-condensed table-hover table-striped crowdsecTable">
         <thead>
