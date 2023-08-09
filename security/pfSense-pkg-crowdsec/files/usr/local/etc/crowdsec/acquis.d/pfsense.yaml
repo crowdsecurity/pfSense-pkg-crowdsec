@@ -1,8 +1,7 @@
+# DO NOT EDIT - to add new datasources (log locations),
+# create new files in /usr/local/etc/crowdsec/acquis.d/
 
 filenames:
-  # DO NOT EDIT - to add new datasources (log locations),
-  # create new files in /usr/local/etc/crowdsec/acquis.d/
-
   # This should cover crowdsecurity/sshd and firewallservices/pf,
   # and is already defined in acquis.yaml
   # - /var/log/auth.log

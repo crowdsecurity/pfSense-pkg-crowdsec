@@ -104,7 +104,6 @@ function crowdsec_validate_form($post, &$input_errors)
 function crowdsec_install()
 {
     // Prepare rc.conf.d variables
-    mwexec('mkdir -p /usr/local/etc/rc.conf.d');
     mwexec('sysrc -f /usr/local/etc/rc.conf.d/crowdsec crowdsec_machine_name=pfsense');
     mwexec('sysrc -f /usr/local/etc/rc.conf.d/crowdsec_firewall crowdsec_firewall_name=pfsense-firewall');
     // UPDATE pfSense ALIAS TABLES

@@ -69,7 +69,7 @@ do-install:
 	( cd ${FILESDIR}${PREFIX}/pkg/crowdsec && \
 		cp -r ./ ${STAGEDIR}${PREFIX}/pkg/crowdsec )
 
-	${INSTALL_DATA} -m 0744 ${FILESDIR}${PREFIX}/etc/rc.d/* \
+	${INSTALL_DATA} -m 0755 ${FILESDIR}${PREFIX}/etc/rc.d/* \
 		${STAGEDIR}${PREFIX}/etc/rc.d/
 
 	@${REINPLACE_CMD} -i '' -e "s|%%PKGVERSION%%|${PKGVERSION}|" \
