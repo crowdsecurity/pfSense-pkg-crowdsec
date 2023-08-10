@@ -215,6 +215,17 @@ function set_yaml_content($content, $filepath)
     }
 }
 
+function is_cs_service_running($name)
+{
+    $onestatus = trim(shell_exec("service $name onestatus"));
+    if (strpos($onestatus, "is running") > 0){
+        return true;
+    }
+    // @TODO: remove this debug log
+    syslog(LOG_INFO, "DEBUG onestatus: $onestatus");
+    return false;
+}
+
 /**
  * custom_php_resync_config_command hook (install, setting edition, ...)
  *
@@ -222,13 +233,20 @@ function set_yaml_content($content, $filepath)
  */
 function crowdsec_resync_config()
 {
+    // Only resync on settings save submission
+    if(!isset($_POST['submit'])){
+        return;
+    }
+
     $cf = config_get_path('installedpackages/crowdsec/config/0', []);
     $candidate_log_dir = '/var/log/crowdsec/';
     $candidate_log_max_size = 999999;
     $candidate_db_wal = true;
+    $should_use_agent = false;
+    $should_use_firewall = false;
     // Handle remote LAPI ON
     if (!empty($cf['lapi_is_remote'])) {
-        // Modify AGENT settings (update /usr/local/etc/crowdsec/config.yaml)
+        // Modify Agent settings (update /usr/local/etc/crowdsec/config.yaml)
         $agent_conf = get_yaml_content(CROWDSEC_AGENT_CONF);
         $update_agent_flag = false;
         if (!empty($agent_conf)) {
@@ -256,11 +274,19 @@ function crowdsec_resync_config()
                     $update_lapi_flag = true;
                 }
             }
+            if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
+                $lapi_url = $lapi_conf['url'] ?? '';
+                $candidate_url = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'];
+                if ($candidate_url !== $lapi_url) {
+                    $lapi_conf['url'] = $candidate_url;
+                    $update_lapi_flag = true;
+                }
+            }
             if ($update_lapi_flag) {
                 set_yaml_content($lapi_conf, CROWDSEC_LAPI_CONF);
             }
         }
-        // Modify Firewall bouncer settings (update /usr/local/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml)
+        // Modify Firewall bouncer yaml config
         $fw_conf = get_yaml_content(CROWDSEC_FIREWALL_CONF);
         $update_fw_flag = false;
         if (!empty($fw_conf)) {
@@ -276,12 +302,8 @@ function crowdsec_resync_config()
                 set_yaml_content($fw_conf, CROWDSEC_FIREWALL_CONF);
             }
         }
-        mwexec('service crowdsec enable');
-        mwexec('service crowdsec start');
-        mwexec('service crowdsec_firewall enable');
-        mwexec('service crowdsec_firewall start');
     } else { // Handle remote LAPI OFF
-        // Modify AGENT settings (update /usr/local/etc/crowdsec/config.yaml)
+        // Modify Agent yaml config
         $agent_conf = get_yaml_content(CROWDSEC_AGENT_CONF);
         $update_agent_flag = false;
         if (!empty($agent_conf)) {
@@ -291,7 +313,7 @@ function crowdsec_resync_config()
         if ($update_agent_flag) {
             set_yaml_content($agent_conf, CROWDSEC_AGENT_CONF);
         }
-        // Modify Firewall bouncer settings (update /usr/local/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml)
+        // Modify Firewall bouncer yaml config
         $fw_conf = get_yaml_content(CROWDSEC_FIREWALL_CONF);
         $update_fw_flag = false;
         if (!empty($fw_conf)) {
@@ -306,18 +328,13 @@ function crowdsec_resync_config()
             }
         }
         mwexec('cscli bouncers delete pfsense-firewall');
-        mwexec('cscli machines delete pfense');
-        mwexec('service crowdsec enable');
-        mwexec('service crowdsec start');
-        mwexec('service crowdsec_firewall enable');
-        mwexec('service crowdsec_firewall start');
+        mwexec('cscli machines delete pfsense');
     }
 
-    // Handle crowdsec service start
+    // Handle Agent and LAPI yaml configs
     if (!empty($cf['enable_agent'])) {
-        // Enable service
-        mwexec('service crowdsec enable');
-        // Modify LAPI settings (update local_api_credentials.yaml)
+        $should_use_agent = true;
+        // Modify LAPI settings
         $lapi_conf = get_yaml_content(CROWDSEC_LAPI_CONF);
         $update_lapi_flag = false;
         if (!empty($lapi_conf)) {
@@ -334,7 +351,7 @@ function crowdsec_resync_config()
             }
         }
 
-        // Modify AGENT settings (update /usr/local/etc/crowdsec/config.yaml)
+        // Modify Agent yaml config
         $agent_conf = get_yaml_content(CROWDSEC_AGENT_CONF);
         $update_agent_flag = false;
         if (!empty($agent_conf)) {
@@ -381,19 +398,11 @@ function crowdsec_resync_config()
                 set_yaml_content($agent_conf, CROWDSEC_AGENT_CONF);
             }
         }
-        // Start service
-        mwexec('service crowdsec start');
-    } else {
-        // Disable service
-        mwexec('service crowdsec stop');
-        mwexec('service crowdsec disable');
     }
 
-    // Handle crowdsec_firewall service start
+    // Handle Firewall Bouncer yaml config
     if (!empty($cf['enable_fw_bouncer'])) {
-        // Enable service
-        mwexec('service crowdsec_firewall enable');
-        // Modify Firewall bouncer settings (update /usr/local/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml)
+        $should_use_firewall = true;
         $fw_conf = get_yaml_content(CROWDSEC_FIREWALL_CONF);
         $update_fw_flag = false;
         if (!empty($fw_conf)) {
@@ -435,64 +444,73 @@ function crowdsec_resync_config()
                 set_yaml_content($fw_conf, CROWDSEC_FIREWALL_CONF);
             }
         }
-        // Start service
-        mwexec('service crowdsec_firewall start');
+    }
+    // Handle services management
+    if ($should_use_agent) {
+        mwexec('service crowdsec enable');
+        //@TODO : restart if already running
+        mwexec("service crowdsec start");
     } else {
-        // Disable service
+        mwexec('service crowdsec stop');
+        mwexec('service crowdsec disable');
+    }
+
+    if ($should_use_firewall) {
+        mwexec('service crowdsec_firewall enable');
+        //@TODO : restart if already running
+        mwexec("service crowdsec_firewall start");
+    } else {
         mwexec('service crowdsec_firewall stop');
         mwexec('service crowdsec_firewall disable');
     }
-    if ($_POST) {
-        $notice_content = 'Settings saved.' .PHP_EOL;
-        if (!empty($cf['enable_agent']) || !empty($cf['enable_fw_bouncer'])) {
-            sleep(2);
-            $crowdsec = trim(shell_exec("service crowdsec onestatus"));
-            $crowdsec_status = strpos($crowdsec, "is running") > 0 ? "running" : "not running";
-            // Handle crowdsec service
-            if (!empty($cf['enable_agent'])){
-                if($crowdsec_status !== 'running'){
-                    $notice_content .= 'Crowdsec service is not running. Please check logs.' .PHP_EOL;
-                }
-                else {
-                    // Handle pfsense collection
-                    if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
-                        $agent_conf = get_yaml_content(CROWDSEC_AGENT_CONF);
-                        if (!empty($agent_conf)) {
-                            $agent_conf['cscli']['hub_branch'] = "pfsense-gui";
-                            set_yaml_content($agent_conf, CROWDSEC_AGENT_CONF);
-                            shell_exec("cscli hub update");
-                            exec("cscli --error collections install crowdsecurity/pfsense 2>&1", $output);
 
-                            shell_exec("service crowdsec reload");
+    // Check service statuses and notify user
+    $notice_content = 'Settings saved.' .PHP_EOL;
+    if ($should_use_agent || $should_use_firewall) {
+        sleep(2);
+        // Handle crowdsec service
+        if ($should_use_agent){
+            if(!is_cs_service_running('crowdsec')){
+                $notice_content .= 'Crowdsec service is not running. Please check logs.' .PHP_EOL;
+            }
+            else {
+                // Handle pfsense collection
+                if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
+                    $agent_conf = get_yaml_content(CROWDSEC_AGENT_CONF);
+                    if (!empty($agent_conf)) {
+                        $agent_conf['cscli']['hub_branch'] = "pfsense-gui";
+                        set_yaml_content($agent_conf, CROWDSEC_AGENT_CONF);
+                        shell_exec("cscli hub update");
+                        exec("cscli --error collections install crowdsecurity/pfsense 2>&1", $output);
+                        // We assume reloading won't fail
+                        shell_exec("service crowdsec reload");
 
-                            if (!empty($output)) {
-                                $notice_content .= 'pfsense collection installation failed:  ' .
-                                                   htmlspecialchars($output[0]) . PHP_EOL;
+                        if (!empty($output)) {
+                            $notice_content .= 'pfsense collection installation failed:  ' .
+                                               htmlspecialchars($output[0]) . PHP_EOL;
 
-                                $notice_content .= 'Please run <b><i>cscli collections install crowdsecurity/pfsense</i></b> and <b><i>service crowdsec reload</i></b>.'
-                                                   .PHP_EOL;
-                            }
-                            else {
-                                $notice_content .= 'Installed collection crowdsecurity/pfsense.' . PHP_EOL;
-                            }
+                            $notice_content .= 'Please run <b><i>cscli collections install crowdsecurity/pfsense</i></b> and <b><i>service crowdsec reload</i></b>.'
+                                               .PHP_EOL;
+                        }
+                        else {
+                            $notice_content .= 'Installed collection crowdsecurity/pfsense.' . PHP_EOL;
                         }
                     }
                 }
             }
-            // Handle firewall bouncer
-            if(!empty($cf['enable_fw_bouncer'])){
-                $crowdsec_firewall = trim(shell_exec("service crowdsec_firewall onestatus"));
-                $crowdsec_firewall_status = strpos($crowdsec_firewall, "is running") > 0 ? "running" : "not running";
-                if($crowdsec_firewall_status !== 'running'){
-                    $notice_content .= 'Crowdsec firewall bouncer is not running. Please check logs.' .PHP_EOL;
-                }
+        }
+        // Handle firewall bouncer
+        if($should_use_firewall){
+            if(!is_cs_service_running('crowdsec_firewall')){
+                $notice_content .= 'Crowdsec firewall bouncer is not running. Please check logs.' .PHP_EOL;
             }
         }
-        if (config_path_enabled('system','use_mfs_tmpvar')) {
-            $notice_content .= "pfsense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can modify this settings <a href='/system_advanced_misc.php'>in this page.</a" .PHP_EOL;
-        }
-        file_put_contents(CROWDSEC_SETTINGS_NOTICE, $notice_content);
     }
+
+    if (config_path_enabled('system','use_mfs_tmpvar')) {
+        $notice_content .= "pfsense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can modify this settings <a href='/system_advanced_misc.php'>in this page.</a" .PHP_EOL;
+    }
+    file_put_contents(CROWDSEC_SETTINGS_NOTICE, $notice_content);
 
 }
 /**
