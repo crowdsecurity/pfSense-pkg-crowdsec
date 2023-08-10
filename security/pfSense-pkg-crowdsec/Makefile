@@ -36,6 +36,8 @@ do-install:
 	${MKDIR} ${STAGEDIR}${DATADIR}
 	${MKDIR} ${STAGEDIR}${PREFIX}/etc/rc.d/
 	${MKDIR} ${STAGEDIR}${PREFIX}/etc/rc.conf.d/
+	${MKDIR} ${STAGEDIR}${PREFIX}/etc/crowdsec/
+	${MKDIR} ${STAGEDIR}${PREFIX}/etc/crowdsec/acquis.d/
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/crowdsec.xml \
 		${STAGEDIR}${PREFIX}/pkg
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/landing.php \
@@ -66,6 +68,8 @@ do-install:
     		${STAGEDIR}/etc/inc/priv
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/crowdsec.inc \
 		${STAGEDIR}${PREFIX}/pkg
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/etc/crowdsec/acquis.d/pfsense.yaml \
+		${STAGEDIR}${PREFIX}/etc/crowdsec/acquis.d
 	${INSTALL_DATA} ${FILESDIR}${DATADIR}/info.xml \
 		${STAGEDIR}${DATADIR}
 

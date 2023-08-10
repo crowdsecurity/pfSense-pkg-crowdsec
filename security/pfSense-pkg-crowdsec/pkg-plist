@@ -3,6 +3,9 @@ pkg/crowdsec.xml
 pkg/crowdsec.inc
 @dir etc/rc.conf.d
 etc/rc.d/pfsense_crowdsec
+@dir etc/crowdsec
+@dir etc/crowdsec/acquis.d
+etc/crowdsec/acquis.d/pfsense.yaml
 %%DATADIR%%/info.xml
 www/shortcuts/crowdsec.inc
 www/crowdsec/landing.php
