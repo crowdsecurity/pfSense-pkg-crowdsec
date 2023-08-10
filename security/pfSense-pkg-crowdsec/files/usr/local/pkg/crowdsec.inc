@@ -320,7 +320,7 @@ function crowdsec_resync_config()
             }
         }
         mwexec('cscli bouncers delete pfsense-firewall');
-        mwexec('cscli machines delete pfense');
+        mwexec('cscli machines delete pfsense');
     }
 
     // Handle crowdsec service start
