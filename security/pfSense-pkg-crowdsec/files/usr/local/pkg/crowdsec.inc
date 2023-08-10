@@ -246,7 +246,7 @@ function crowdsec_resync_config()
     $should_use_firewall = false;
     // Handle remote LAPI ON
     if (!empty($cf['lapi_is_remote'])) {
-        // Modify AGENT settings (update /usr/local/etc/crowdsec/config.yaml)
+        // Modify Agent settings (update /usr/local/etc/crowdsec/config.yaml)
         $agent_conf = get_yaml_content(CROWDSEC_AGENT_CONF);
         $update_agent_flag = false;
         if (!empty($agent_conf)) {
@@ -274,11 +274,19 @@ function crowdsec_resync_config()
                     $update_lapi_flag = true;
                 }
             }
+            if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
+                $lapi_url = $lapi_conf['url'] ?? '';
+                $candidate_url = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'];
+                if ($candidate_url !== $lapi_url) {
+                    $lapi_conf['url'] = $candidate_url;
+                    $update_lapi_flag = true;
+                }
+            }
             if ($update_lapi_flag) {
                 set_yaml_content($lapi_conf, CROWDSEC_LAPI_CONF);
             }
         }
-        // Modify Firewall bouncer settings (update /usr/local/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml)
+        // Modify Firewall bouncer yaml config
         $fw_conf = get_yaml_content(CROWDSEC_FIREWALL_CONF);
         $update_fw_flag = false;
         if (!empty($fw_conf)) {
@@ -295,7 +303,7 @@ function crowdsec_resync_config()
             }
         }
     } else { // Handle remote LAPI OFF
-        // Modify AGENT settings (update /usr/local/etc/crowdsec/config.yaml)
+        // Modify Agent yaml config
         $agent_conf = get_yaml_content(CROWDSEC_AGENT_CONF);
         $update_agent_flag = false;
         if (!empty($agent_conf)) {
@@ -305,7 +313,7 @@ function crowdsec_resync_config()
         if ($update_agent_flag) {
             set_yaml_content($agent_conf, CROWDSEC_AGENT_CONF);
         }
-        // Modify Firewall bouncer settings (update /usr/local/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml)
+        // Modify Firewall bouncer yaml config
         $fw_conf = get_yaml_content(CROWDSEC_FIREWALL_CONF);
         $update_fw_flag = false;
         if (!empty($fw_conf)) {
@@ -323,10 +331,10 @@ function crowdsec_resync_config()
         mwexec('cscli machines delete pfsense');
     }
 
-    // Handle crowdsec service start
+    // Handle Agent and LAPI yaml configs
     if (!empty($cf['enable_agent'])) {
         $should_use_agent = true;
-        // Modify LAPI settings (update local_api_credentials.yaml)
+        // Modify LAPI settings
         $lapi_conf = get_yaml_content(CROWDSEC_LAPI_CONF);
         $update_lapi_flag = false;
         if (!empty($lapi_conf)) {
@@ -343,7 +351,7 @@ function crowdsec_resync_config()
             }
         }
 
-        // Modify AGENT settings (update /usr/local/etc/crowdsec/config.yaml)
+        // Modify Agent yaml config
         $agent_conf = get_yaml_content(CROWDSEC_AGENT_CONF);
         $update_agent_flag = false;
         if (!empty($agent_conf)) {
@@ -392,10 +400,9 @@ function crowdsec_resync_config()
         }
     }
 
-    // Handle crowdsec_firewall service start
+    // Handle Firewall Bouncer yaml config
     if (!empty($cf['enable_fw_bouncer'])) {
         $should_use_firewall = true;
-        // Modify Firewall bouncer settings (update /usr/local/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml)
         $fw_conf = get_yaml_content(CROWDSEC_FIREWALL_CONF);
         $update_fw_flag = false;
         if (!empty($fw_conf)) {
@@ -499,8 +506,6 @@ function crowdsec_resync_config()
             }
         }
     }
-
-
 
     if (config_path_enabled('system','use_mfs_tmpvar')) {
         $notice_content .= "pfsense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can modify this settings <a href='/system_advanced_misc.php'>in this page.</a" .PHP_EOL;
