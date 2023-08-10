@@ -6,6 +6,7 @@ etc/rc.d/pfsense_crowdsec
 %%DATADIR%%/info.xml
 www/shortcuts/crowdsec.inc
 www/crowdsec/landing.php
+www/crowdsec/landing.html
 www/crowdsec/status.php
 www/crowdsec/metrics.php
 www/crowdsec/endpoint/api.php

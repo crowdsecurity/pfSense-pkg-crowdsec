@@ -40,6 +40,8 @@ do-install:
 		${STAGEDIR}${PREFIX}/pkg
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/landing.php \
     		${STAGEDIR}${PREFIX}/www/crowdsec
+	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/landing.html \
+    		${STAGEDIR}${PREFIX}/www/crowdsec
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/status.php \
 			${STAGEDIR}${PREFIX}/www/crowdsec
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/metrics.php \
