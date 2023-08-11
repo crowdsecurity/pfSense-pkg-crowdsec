@@ -98,7 +98,7 @@
         <field>
             <fielddescr>Enable</fielddescr>
             <fieldname>enable_lapi</fieldname>
-            <description>Enable a local API on the pfsense box. If disabled, use a remote LAPI on an external machine.</description>
+            <description>Enable a local API on the pfSense box. If disabled, use a remote LAPI on an external machine.</description>
             <type>checkbox</type>
             <default_value>on</default_value>
             <enablefields>lapi_host,lapi_port</enablefields>
