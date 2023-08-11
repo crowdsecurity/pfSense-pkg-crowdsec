@@ -297,6 +297,10 @@ function crowdsec_resync_config()
          * @see /usr/local/etc/rc.d/crowdsec
          * @see /usr/local/etc/rc.d/crowdsec_firewall
          */
+
+        // update config immediately because cscli needs .api.server.enable = true
+        set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
+
         mwexec('cscli bouncers delete pfsense-firewall');
         mwexec('cscli machines delete pfsense');
     } else { // Handle Remote LAPI ON (e.g. LAPI OFF)
