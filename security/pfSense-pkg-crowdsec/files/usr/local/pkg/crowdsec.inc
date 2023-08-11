@@ -221,7 +221,7 @@ function get_yaml_content($filepath)
 {
     $result = [];
     try {
-        $result = Yaml::parse(file_get_contents($filepath));
+        $result = Yaml::parseFile($filepath);
     } catch (ParseException $exception) {
         syslog(LOG_ERR, 'Unable to parse ' . $filepath . ': ' . $exception->getMessage());
     }
