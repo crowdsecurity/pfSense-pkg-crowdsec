@@ -80,6 +80,11 @@ function crowdsec_validate_form($post, &$input_errors)
     if (empty($post['enable_lapi'])) {
         if (empty($post['remote_lapi_port'])) {
             $input_errors[] = 'Remote LAPI port is required for remote LAPI.';
+        } else {
+            $remote_lapi_port = $post['remote_lapi_port'];
+            if (!is_numeric($remote_lapi_port)) {
+                $input_errors[] = 'Remote LAPI port must be a numeric value.';
+            }
         }
         if (empty($post['remote_lapi_host'])) {
             $input_errors[] = 'Remote LAPI host is required for remote LAPI.';
@@ -97,16 +102,14 @@ function crowdsec_validate_form($post, &$input_errors)
         // Use Local API
         if (empty($post['lapi_port'])) {
             $input_errors[] = 'LAPI port is required for LAPI.';
-        }
-        if (empty($post['lapi_host'])) {
-            $input_errors[] = 'LAPI host is required for LAPI.';
-        }
-
-        if (!empty($post['lapi_port'])) {
+        } else {
             $lapi_port = $post['lapi_port'];
             if (!is_numeric($lapi_port)) {
                 $input_errors[] = 'LAPI port must be a numeric value.';
             }
+        }
+        if (empty($post['lapi_host'])) {
+            $input_errors[] = 'LAPI host is required for LAPI.';
         }
     }
 }
