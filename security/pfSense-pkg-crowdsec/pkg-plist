@@ -13,6 +13,7 @@ www/crowdsec/landing.php
 www/crowdsec/landing.html
 www/crowdsec/status.php
 www/crowdsec/metrics.php
+www/crowdsec/metrics.html
 www/crowdsec/endpoint/api.php
 www/crowdsec/js/crowdsec.js
 www/crowdsec/css/jquery.bootgrid.min.css

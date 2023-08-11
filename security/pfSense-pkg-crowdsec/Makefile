@@ -48,6 +48,8 @@ do-install:
 			${STAGEDIR}${PREFIX}/www/crowdsec
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/metrics.php \
             			${STAGEDIR}${PREFIX}/www/crowdsec
+	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/metrics.html \
+            			${STAGEDIR}${PREFIX}/www/crowdsec
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/endpoint/api.php \
           			${STAGEDIR}${PREFIX}/www/crowdsec/endpoint
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/js/crowdsec.js \
