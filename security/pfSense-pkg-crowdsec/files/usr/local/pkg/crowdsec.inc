@@ -475,7 +475,8 @@ function crowdsec_resync_config()
     }
 
     // Check service statuses and notify user
-    $notice_content = 'Settings saved.' . PHP_EOL;
+    $notice_content = 'Settings saved';
+    $notice_content .= $_POST ? '.' . PHP_EOL : ' during package installation.' . PHP_EOL;
     if ($should_use_agent || $should_use_firewall) {
         sleep(2);
         // Handle crowdsec service
@@ -519,6 +520,7 @@ function crowdsec_resync_config()
         $notice_content .= "pfsense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can modify this settings <a href='/system_advanced_misc.php'>in this page.</a" .
                            PHP_EOL;
     }
+
     file_put_contents(CROWDSEC_SETTINGS_NOTICE, $notice_content);
 }
 
@@ -598,7 +600,7 @@ function crowdsec_after_form()
          }
         
         $("form").submit(function(){
-              $('#submit').closest('div').html('<div class="loading"><i class="fa fa-spinner fa-spin"></i>Saving settings, please wait..</div>');
+            $('#submit').closest('div').html('<div class="loading"><i class="fa fa-spinner fa-spin"></i>Saving settings, please wait..</div>');
         });
     });
 //]]>
