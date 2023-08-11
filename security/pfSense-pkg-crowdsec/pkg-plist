@@ -5,6 +5,7 @@ pkg/crowdsec.inc
 etc/rc.d/pfsense_crowdsec
 @dir etc/crowdsec
 @dir etc/crowdsec/acquis.d
+etc/crowdsec/feature.yaml
 etc/crowdsec/acquis.d/pfsense.yaml
 %%DATADIR%%/info.xml
 www/shortcuts/crowdsec.inc

@@ -2,7 +2,7 @@
 
 PORTNAME=	pfSense-pkg-crowdsec
 PORTVERSION=	0.0.2
-PORTREVISION=	22
+PORTREVISION=	23
 CATEGORIES=	security
 MASTER_SITES=	# empty
 DISTFILES=	# empty
@@ -68,6 +68,8 @@ do-install:
     		${STAGEDIR}/etc/inc/priv
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/crowdsec.inc \
 		${STAGEDIR}${PREFIX}/pkg
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/etc/crowdsec/feature.yaml \
+		${STAGEDIR}${PREFIX}/etc/crowdsec
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/etc/crowdsec/acquis.d/pfsense.yaml \
 		${STAGEDIR}${PREFIX}/etc/crowdsec/acquis.d
 	${INSTALL_DATA} ${FILESDIR}${DATADIR}/info.xml \
