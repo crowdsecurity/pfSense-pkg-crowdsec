@@ -28,8 +28,8 @@ use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Exception\DumpException;
 
-define('CROWDSEC_LAPI_CONF', '/usr/local/etc/crowdsec/local_api_credentials.yaml');
-define('CROWDSEC_AGENT_CONF', '/usr/local/etc/crowdsec/config.yaml');
+define('CROWDSEC_LAPI_CREDENTIALS', '/usr/local/etc/crowdsec/local_api_credentials.yaml');
+define('CROWDSEC_CONF', '/usr/local/etc/crowdsec/config.yaml');
 define('CROWDSEC_FIREWALL_CONF', '/usr/local/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml');
 define('CROWDSEC_SETTINGS_NOTICE', '/usr/local/www/crowdsec/settings-notice.txt');
 define('CROWDSEC_PFSENSE_COLLECTION', '/usr/local/etc/crowdsec/collections/pfsense.yaml');
@@ -159,12 +159,12 @@ function crowdsec_install()
         set_yaml_content($fw_conf, CROWDSEC_FIREWALL_CONF);
     }
     // Modify agent yaml config
-    $agent_conf = get_yaml_content(CROWDSEC_AGENT_CONF);
-    if (!empty($agent_conf)) {
-        $agent_conf['common']['log_dir'] = $candidate_log_dir;
-        $agent_conf['common']['log_max_size'] = $candidate_log_max_size;
-        $agent_conf['db_config']['use_wal'] = true;
-        set_yaml_content($agent_conf, CROWDSEC_AGENT_CONF);
+    $crowdsec_conf = get_yaml_content(CROWDSEC_CONF);
+    if (!empty($crowdsec_conf)) {
+        $crowdsec_conf['common']['log_dir'] = $candidate_log_dir;
+        $crowdsec_conf['common']['log_max_size'] = $candidate_log_max_size;
+        $crowdsec_conf['db_config']['use_wal'] = true;
+        set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
     }
 }
 
@@ -266,34 +266,34 @@ function crowdsec_resync_config()
         return;
     }
     // Init some flags to handle services management
-    $should_use_agent = false;
+    $should_use_crowdsec = false;
     $should_use_firewall = false;
     // Init some flags to handle yaml overriding
-    $update_lapi_yaml = false;
-    $update_agent_yaml = false;
-    $update_fw_yaml = false;
+    $update_lapi_cred = false;
+    $update_crowdsec_conf = false;
+    $update_fw_conf = false;
     // Retrieve yaml contents
-    $lapi_conf = get_yaml_content(CROWDSEC_LAPI_CONF);
-    $agent_conf = get_yaml_content(CROWDSEC_AGENT_CONF);
+    $lapi_credentials = get_yaml_content(CROWDSEC_LAPI_CREDENTIALS);
+    $crowdsec_conf = get_yaml_content(CROWDSEC_CONF);
     $fw_conf = get_yaml_content(CROWDSEC_FIREWALL_CONF);
     // Handle LAPI ON
     if (!empty($cf['enable_lapi'])) {
-        $should_use_agent = true;
+        $should_use_crowdsec = true;
         // Modify LAPI settings
-        if (!empty($lapi_conf)) {
+        if (!empty($lapi_credentials)) {
             if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
-                $lapi_url = $lapi_conf['url'] ?? '';
+                $lapi_url = $lapi_credentials['url'] ?? '';
                 $candidate_url = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'];
                 if ($candidate_url !== $lapi_url) {
-                    $lapi_conf['url'] = $candidate_url;
-                    $update_lapi_yaml = true;
+                    $lapi_credentials['url'] = $candidate_url;
+                    $update_lapi_cred = true;
                 }
             }
         }
         // Modify Agent yaml config
-        if (!empty($agent_conf)) {
-            $agent_conf['api']['server']['enable'] = true;
-            $update_agent_yaml = true;
+        if (!empty($crowdsec_conf)) {
+            $crowdsec_conf['api']['server']['enable'] = true;
+            $update_crowdsec_conf = true;
         }
         // Modify Firewall bouncer yaml config
         if (!empty($fw_conf)) {
@@ -301,7 +301,7 @@ function crowdsec_resync_config()
             $candidate_key = '${API_KEY}';
             if ($candidate_key !== $fw_api_key) {
                 $fw_conf['api_key'] = $candidate_key;
-                $update_fw_yaml = true;
+                $update_fw_conf = true;
             }
         }
         /**
@@ -313,32 +313,32 @@ function crowdsec_resync_config()
         mwexec('cscli machines delete pfsense');
     } else { // Handle Remote LAPI ON (e.g. LAPI OFF)
         // Modify Agent yaml config
-        if (!empty($agent_conf)) {
-            $agent_conf['api']['server']['enable'] = false;
-            $update_agent_yaml = true;
+        if (!empty($crowdsec_conf)) {
+            $crowdsec_conf['api']['server']['enable'] = false;
+            $update_crowdsec_conf = true;
         }
         // Modify LAPI yaml config
-        if (!empty($lapi_conf)) {
+        if (!empty($lapi_credentials)) {
             if (!empty($cf['remote_agent_user']) && !empty($cf['remote_agent_password'])) {
-                $lapi_login = $lapi_conf['login'] ?? '';
+                $lapi_login = $lapi_credentials['login'] ?? '';
                 $candidate_login = $cf['remote_agent_user'];
                 if ($candidate_login !== $lapi_login) {
-                    $lapi_conf['login'] = $candidate_login;
-                    $update_lapi_yaml = true;
+                    $lapi_credentials['login'] = $candidate_login;
+                    $update_lapi_cred = true;
                 }
-                $lapi_password = $lapi_conf['password'] ?? '';
+                $lapi_password = $lapi_credentials['password'] ?? '';
                 $candidate_password = $cf['remote_agent_password'];
                 if ($candidate_password !== $lapi_password) {
-                    $lapi_conf['password'] = $candidate_password;
-                    $update_lapi_yaml = true;
+                    $lapi_credentials['password'] = $candidate_password;
+                    $update_lapi_cred = true;
                 }
             }
             if (!empty($cf['remote_lapi_port']) && !empty($cf['remote_lapi_host'])) {
-                $lapi_url = $lapi_conf['url'] ?? '';
+                $lapi_url = $lapi_credentials['url'] ?? '';
                 $candidate_url = 'http://' . $cf['remote_lapi_host'] . ':' . $cf['remote_lapi_port'];
                 if ($candidate_url !== $lapi_url) {
-                    $lapi_conf['url'] = $candidate_url;
-                    $update_lapi_yaml = true;
+                    $lapi_credentials['url'] = $candidate_url;
+                    $update_lapi_cred = true;
                 }
             }
         }
@@ -349,7 +349,7 @@ function crowdsec_resync_config()
                 $candidate_key = $cf['remote_fw_bouncer_api_key'];
                 if ($candidate_key !== $fw_api_key) {
                     $fw_conf['api_key'] = $candidate_key;
-                    $update_fw_yaml = true;
+                    $update_fw_conf = true;
                 }
             }
             if (!empty($cf['remote_lapi_port']) && !empty($cf['remote_lapi_host'])) {
@@ -357,7 +357,7 @@ function crowdsec_resync_config()
                 $candidate_url = 'http://' . $cf['remote_lapi_host'] . ':' . $cf['remote_lapi_port'] . '/';
                 if ($candidate_url !== $fw_url) {
                     $fw_conf['api_url'] = $candidate_url;
-                    $update_fw_yaml = true;
+                    $update_fw_conf = true;
                 }
             }
         }
@@ -365,47 +365,47 @@ function crowdsec_resync_config()
 
     // Handle Agent ON
     if (!empty($cf['enable_agent'])) {
-        $should_use_agent = true;
+        $should_use_crowdsec = true;
         // Modify Agent yaml config
-        if (!empty($agent_conf)) {
-            $agent_crowdsec_service = $agent_conf['crowdsec_service']['enable'] ?? false;
+        if (!empty($_conf)) {
+            $agent_crowdsec_service = $crowdsec_conf['crowdsec_service']['enable'] ?? false;
             if (true !== $agent_crowdsec_service) {
-                $agent_conf['crowdsec_service']['enable'] = true;
-                $update_agent_yaml = true;
+                $crowdsec_conf['crowdsec_service']['enable'] = true;
+                $update_crowdsec_conf = true;
             }
             if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
-                $agent_url = $agent_conf['api']['server']['listen_uri'] ?? '';
+                $agent_url = $crowdsec_conf['api']['server']['listen_uri'] ?? '';
                 $candidate_url = $cf['lapi_host'] . ':' . $cf['lapi_port'];
                 if ($candidate_url !== $agent_url) {
-                    $agent_conf['api']['server']['listen_uri'] = $candidate_url;
-                    $update_agent_yaml = true;
+                    $crowdsec_conf['api']['server']['listen_uri'] = $candidate_url;
+                    $update_crowdsec_conf = true;
                 }
             }
             if (!empty($cf['agent_log_level'])) {
-                $agent_log_level = $agent_conf['common']['log_level'] ?? 'info';
+                $agent_log_level = $crowdsec_conf['common']['log_level'] ?? 'info';
                 $candidate_level = $cf['agent_log_level'];
                 if ($candidate_level !== $agent_log_level) {
-                    $agent_conf['common']['log_level'] = $candidate_level;
-                    $update_agent_yaml = true;
+                    $crowdsec_conf['common']['log_level'] = $candidate_level;
+                    $update_crowdsec_conf = true;
                 }
             }
             if (!empty($cf['metrics_port'])) {
-                $agent_metrics_port = $agent_conf['prometheus']['listen_port'] ?? 6060;
+                $agent_metrics_port = $crowdsec_conf['prometheus']['listen_port'] ?? 6060;
                 $candidate_port = $cf['metrics_port'];
                 if ($candidate_port !== $agent_metrics_port) {
-                    $agent_conf['prometheus']['listen_port'] = (int)$candidate_port;
-                    $update_agent_yaml = true;
+                    $crowdsec_conf['prometheus']['listen_port'] = (int)$candidate_port;
+                    $update_crowdsec_conf = true;
                 }
             }
         }
     } else {
         // Handle Agent OFF
         // Modify Agent yaml config
-        if (!empty($agent_conf)) {
-            $agent_crowdsec_service = $agent_conf['crowdsec_service']['enable'] ?? true;
+        if (!empty($crowdsec_conf)) {
+            $agent_crowdsec_service = $crowdsec_conf['crowdsec_service']['enable'] ?? true;
             if (false !== $agent_crowdsec_service) {
-                $agent_conf['crowdsec_service']['enable'] = false;
-                $update_agent_yaml = true;
+                $crowdsec_conf['crowdsec_service']['enable'] = false;
+                $update_crowdsec_conf = true;
             }
         }
     }
@@ -418,7 +418,7 @@ function crowdsec_resync_config()
                 $candidate_url = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'] . '/';
                 if ($candidate_url !== $fw_url) {
                     $fw_conf['api_url'] = $candidate_url;
-                    $update_fw_yaml = true;
+                    $update_fw_conf = true;
                 }
             }
             if (!empty($cf['firewall_bouncer_log_level'])) {
@@ -426,7 +426,7 @@ function crowdsec_resync_config()
                 $candidate_level = $cf['firewall_bouncer_log_level'];
                 if ($candidate_level !== $fw_log_level) {
                     $fw_conf['log_level'] = $candidate_level;
-                    $update_fw_yaml = true;
+                    $update_fw_conf = true;
                 }
             }
             if (!empty($cf['metrics_firewall_port'])) {
@@ -434,23 +434,23 @@ function crowdsec_resync_config()
                 $candidate_port = $cf['metrics_firewall_port'];
                 if ($candidate_port !== $fw_metrics_port) {
                     $fw_conf['prometheus']['listen_port'] = (int)$candidate_port;
-                    $update_fw_yaml = true;
+                    $update_fw_conf = true;
                 }
             }
         }
     }
     // Override yaml contents
-    if ($update_lapi_yaml) {
-        set_yaml_content($lapi_conf, CROWDSEC_LAPI_CONF);
+    if ($update_lapi_cred) {
+        set_yaml_content($lapi_credentials, CROWDSEC_LAPI_CREDENTIALS);
     }
-    if ($update_fw_yaml) {
+    if ($update_fw_conf) {
         set_yaml_content($fw_conf, CROWDSEC_FIREWALL_CONF);
     }
-    if ($update_agent_yaml) {
-        set_yaml_content($agent_conf, CROWDSEC_AGENT_CONF);
+    if ($update_crowdsec_conf) {
+        set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
     }
     // Handle services management
-    if ($should_use_agent) {
+    if ($should_use_crowdsec) {
         mwexec('service crowdsec enable');
         // If we don't stop, the start command failed with message: crowdsec already running?
         if(is_cs_service_running('crowdsec')){
@@ -477,19 +477,19 @@ function crowdsec_resync_config()
     // Check service statuses and notify user
     $notice_content = 'Settings saved';
     $notice_content .= $_POST ? '.' . PHP_EOL : ' during package installation.' . PHP_EOL;
-    if ($should_use_agent || $should_use_firewall) {
+    if ($should_use_crowdsec || $should_use_firewall) {
         sleep(2);
         // Handle crowdsec service
-        if ($should_use_agent) {
+        if ($should_use_crowdsec) {
             if (!is_cs_service_running('crowdsec')) {
                 $notice_content .= 'Crowdsec service is not running. Please check logs.' . PHP_EOL;
             } else {
                 // Handle pfsense collection
                 if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
-                    $agent_conf = get_yaml_content(CROWDSEC_AGENT_CONF);
-                    if (!empty($agent_conf)) {
-                        $agent_conf['cscli']['hub_branch'] = "pfsense-gui";
-                        set_yaml_content($agent_conf, CROWDSEC_AGENT_CONF);
+                    $crowdsec_conf = get_yaml_content(CROWDSEC_CONF);
+                    if (!empty($crowdsec_conf)) {
+                        $crowdsec_conf['cscli']['hub_branch'] = "pfsense-gui";
+                        set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
                         shell_exec("cscli hub update");
                         exec("cscli --error collections install crowdsecurity/pfsense 2>&1", $output);
                         // We assume reloading won't fail
