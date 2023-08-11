@@ -2,7 +2,7 @@
 
 PORTNAME=	pfSense-pkg-crowdsec
 PORTVERSION=	0.0.2
-PORTREVISION=	23
+PORTREVISION=	25
 CATEGORIES=	security
 MASTER_SITES=	# empty
 DISTFILES=	# empty
@@ -47,6 +47,8 @@ do-install:
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/status.php \
 			${STAGEDIR}${PREFIX}/www/crowdsec
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/metrics.php \
+            			${STAGEDIR}${PREFIX}/www/crowdsec
+	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/metrics.html \
             			${STAGEDIR}${PREFIX}/www/crowdsec
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/endpoint/api.php \
           			${STAGEDIR}${PREFIX}/www/crowdsec/endpoint
