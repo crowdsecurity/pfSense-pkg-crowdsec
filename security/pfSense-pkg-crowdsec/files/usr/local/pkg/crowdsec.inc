@@ -281,24 +281,16 @@ function crowdsec_resync_config()
         // Modify LAPI settings
         if (!empty($lapi_credentials)) {
             if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
-                $lapi_url = $lapi_credentials['url'] ?? '';
-                $candidate_url = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'];
-                if ($candidate_url !== $lapi_url) {
-                    $lapi_credentials['url'] = $candidate_url;
-                }
+                $lapi_credentials['url'] = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'];
             }
         }
-        // Modify Agent yaml config
+        // Modify crowdsec configuration
         if (!empty($crowdsec_conf)) {
             $crowdsec_conf['api']['server']['enable'] = true;
         }
-        // Modify Firewall bouncer yaml config
+        // Modify Firewall bouncer configuration
         if (!empty($fw_conf)) {
-            $fw_api_key = $fw_conf['api_key'] ?? '';
-            $candidate_key = '${API_KEY}';
-            if ($candidate_key !== $fw_api_key) {
-                $fw_conf['api_key'] = $candidate_key;
-            }
+            $fw_conf['api_key'] = '${API_KEY}';
         }
         /**
          * Machine and bouncer will be created (and registered) again on next service start; so we delete them here.
@@ -315,40 +307,20 @@ function crowdsec_resync_config()
         // Modify LAPI yaml config
         if (!empty($lapi_credentials)) {
             if (!empty($cf['remote_agent_user']) && !empty($cf['remote_agent_password'])) {
-                $lapi_login = $lapi_credentials['login'] ?? '';
-                $candidate_login = $cf['remote_agent_user'];
-                if ($candidate_login !== $lapi_login) {
-                    $lapi_credentials['login'] = $candidate_login;
-                }
-                $lapi_password = $lapi_credentials['password'] ?? '';
-                $candidate_password = $cf['remote_agent_password'];
-                if ($candidate_password !== $lapi_password) {
-                    $lapi_credentials['password'] = $candidate_password;
-                }
+                $lapi_credentials['login'] = $cf['remote_agent_user'];
+                $lapi_credentials['password'] = $cf['remote_agent_password'];
             }
             if (!empty($cf['remote_lapi_port']) && !empty($cf['remote_lapi_host'])) {
-                $lapi_url = $lapi_credentials['url'] ?? '';
-                $candidate_url = 'http://' . $cf['remote_lapi_host'] . ':' . $cf['remote_lapi_port'];
-                if ($candidate_url !== $lapi_url) {
-                    $lapi_credentials['url'] = $candidate_url;
-                }
+                $lapi_credentials['url'] = 'http://' . $cf['remote_lapi_host'] . ':' . $cf['remote_lapi_port'];
             }
         }
         // Modify Firewall bouncer yaml config
         if (!empty($fw_conf)) {
             if (!empty($cf['remote_fw_bouncer_api_key'])) {
-                $fw_api_key = $fw_conf['api_key'] ?? '';
-                $candidate_key = $cf['remote_fw_bouncer_api_key'];
-                if ($candidate_key !== $fw_api_key) {
-                    $fw_conf['api_key'] = $candidate_key;
-                }
+                $fw_conf['api_key'] = $cf['remote_fw_bouncer_api_key'];
             }
             if (!empty($cf['remote_lapi_port']) && !empty($cf['remote_lapi_host'])) {
-                $fw_url = $fw_conf['api_url'] ?? '';
-                $candidate_url = 'http://' . $cf['remote_lapi_host'] . ':' . $cf['remote_lapi_port'] . '/';
-                if ($candidate_url !== $fw_url) {
-                    $fw_conf['api_url'] = $candidate_url;
-                }
+                $fw_conf['api_url'] = 'http://' . $cf['remote_lapi_host'] . ':' . $cf['remote_lapi_port'] . '/';
             }
         }
     }
@@ -357,41 +329,23 @@ function crowdsec_resync_config()
     if (!empty($cf['enable_agent'])) {
         $should_use_crowdsec = true;
         // Modify Agent yaml config
-        if (!empty($_conf)) {
-            $agent_crowdsec_service = $crowdsec_conf['crowdsec_service']['enable'] ?? false;
-            if (true !== $agent_crowdsec_service) {
-                $crowdsec_conf['crowdsec_service']['enable'] = true;
-            }
+        if (!empty($crowdsec_conf)) {
+            $crowdsec_conf['crowdsec_service']['enable'] = true;
             if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
-                $agent_url = $crowdsec_conf['api']['server']['listen_uri'] ?? '';
-                $candidate_url = $cf['lapi_host'] . ':' . $cf['lapi_port'];
-                if ($candidate_url !== $agent_url) {
-                    $crowdsec_conf['api']['server']['listen_uri'] = $candidate_url;
-                }
+                $crowdsec_conf['api']['server']['listen_uri'] = $cf['lapi_host'] . ':' . $cf['lapi_port'];
             }
             if (!empty($cf['agent_log_level'])) {
-                $agent_log_level = $crowdsec_conf['common']['log_level'] ?? 'info';
-                $candidate_level = $cf['agent_log_level'];
-                if ($candidate_level !== $agent_log_level) {
-                    $crowdsec_conf['common']['log_level'] = $candidate_level;
-                }
+                $crowdsec_conf['common']['log_level'] = $cf['agent_log_level'];
             }
             if (!empty($cf['metrics_port'])) {
-                $agent_metrics_port = $crowdsec_conf['prometheus']['listen_port'] ?? 6060;
-                $candidate_port = $cf['metrics_port'];
-                if ($candidate_port !== $agent_metrics_port) {
-                    $crowdsec_conf['prometheus']['listen_port'] = (int)$candidate_port;
-                }
+                $crowdsec_conf['prometheus']['listen_port'] = (int)$cf['metrics_port'];
             }
         }
     } else {
         // Handle Agent OFF
         // Modify Agent yaml config
         if (!empty($crowdsec_conf)) {
-            $agent_crowdsec_service = $crowdsec_conf['crowdsec_service']['enable'] ?? true;
-            if (false !== $agent_crowdsec_service) {
-                $crowdsec_conf['crowdsec_service']['enable'] = false;
-            }
+            $crowdsec_conf['crowdsec_service']['enable'] = false;
         }
     }
     // Handle Firewall Bouncer ON
@@ -399,25 +353,13 @@ function crowdsec_resync_config()
         $should_use_firewall = true;
         if (!empty($fw_conf)) {
             if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
-                $fw_url = $fw_conf['api_url'] ?? '';
-                $candidate_url = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'] . '/';
-                if ($candidate_url !== $fw_url) {
-                    $fw_conf['api_url'] = $candidate_url;
-                }
+                $fw_conf['api_url'] = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'] . '/';
             }
             if (!empty($cf['firewall_bouncer_log_level'])) {
-                $fw_log_level = $fw_conf['log_level'] ?? '';
-                $candidate_level = $cf['firewall_bouncer_log_level'];
-                if ($candidate_level !== $fw_log_level) {
-                    $fw_conf['log_level'] = $candidate_level;
-                }
+                $fw_conf['log_level'] = $cf['firewall_bouncer_log_level'];
             }
             if (!empty($cf['metrics_firewall_port'])) {
-                $fw_metrics_port = $fw_conf['prometheus']['listen_port'] ?? 6060;
-                $candidate_port = $cf['metrics_firewall_port'];
-                if ($candidate_port !== $fw_metrics_port) {
-                    $fw_conf['prometheus']['listen_port'] = (int)$candidate_port;
-                }
+                $fw_conf['prometheus']['listen_port'] = (int)$cf['metrics_firewall_port'];
             }
         }
     }
