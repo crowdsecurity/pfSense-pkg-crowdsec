@@ -101,7 +101,6 @@
             <description>Enable a local API on the pfSense box. If disabled, use a remote LAPI on an external machine.</description>
             <type>checkbox</type>
             <default_value>on</default_value>
-            <enablefields>lapi_host,lapi_port</enablefields>
         </field>
         <field>
             <fielddescr>LAPI host</fielddescr>

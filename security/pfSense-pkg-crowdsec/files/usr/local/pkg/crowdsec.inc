@@ -493,21 +493,15 @@ function crowdsec_after_form()
 
     function disableRemote()
     {
-        $('input[name="remote_lapi_host"]').prop('disabled', true);
-        $('input[name="remote_lapi_port"]').prop('disabled', true);
-        $('input[name="remote_agent_user"]').prop('disabled', true);
-        $('input[name="remote_agent_password"]').prop('disabled', true);
-        $('input[name="remote_fw_bouncer_api_key"]').prop('disabled', true);
+        $('#enable_lapi').closest('div.form-group').next().show();
+        $('#enable_lapi').closest('div.form-group').next().next().show();
         $('#enable_lapi').closest('div.panel-default').next().find('.panel-body').hide();
     }
     
     function enableRemote()
     {
-        $('input[name="remote_lapi_host"]').prop('disabled', false);
-        $('input[name="remote_lapi_port"]').prop('disabled', false);
-        $('input[name="remote_agent_user"]').prop('disabled', false);
-        $('input[name="remote_agent_password"]').prop('disabled', false);
-        $('input[name="remote_fw_bouncer_api_key"]').prop('disabled', false);
+        $('#enable_lapi').closest('div.form-group').next().hide();
+        $('#enable_lapi').closest('div.form-group').next().next().hide();
         $('#enable_lapi').closest('div.panel-default').next().find('.panel-body').show();
     }
     
