@@ -204,13 +204,6 @@
             <required>true</required>
             <default_value>6060</default_value>
         </field>
-        <field>
-            <fielddescr>Port (firewall bouncer)</fielddescr>
-            <fieldname>metrics_firewall_port</fieldname>
-            <type>input</type>
-            <required>true</required>
-            <default_value>60601</default_value>
-        </field>
 
         <!-- Crowdsec IPv4 blocklist settings -->
         <field>
