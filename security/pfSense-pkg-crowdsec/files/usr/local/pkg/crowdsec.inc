@@ -70,12 +70,6 @@ function crowdsec_validate_form($post, &$input_errors)
             $input_errors[] = 'Metrics port (crowdsec) must be a numeric value.';
         }
     }
-    if (!empty($post['metrics_firewall_port'])) {
-        $metrics_firewall_port = $post['metrics_firewall_port'];
-        if (!is_numeric($metrics_firewall_port)) {
-            $input_errors[] = 'Metrics port (firewall bouncer) must be a numeric value.';
-        }
-    }
     // Use external LAPI
     if (empty($post['enable_lapi'])) {
         if (empty($post['remote_lapi_port'])) {
@@ -292,15 +286,15 @@ function crowdsec_resync_config()
         if (!empty($fw_conf)) {
             $fw_conf['api_key'] = '${API_KEY}';
         }
+
+        // update config immediately because cscli needs .api.server.enable = true
+        set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
+
         /**
          * Machine and bouncer will be created (and registered) again on next service start; so we delete them here.
          * @see /usr/local/etc/rc.d/crowdsec
          * @see /usr/local/etc/rc.d/crowdsec_firewall
          */
-
-        // update config immediately because cscli needs .api.server.enable = true
-        set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
-
         // there is no --force option, we ignore errors if the machine or bouncer don't exist
         mwexec('cscli bouncers delete pfsense-firewall 2>/dev/null');
         mwexec('cscli machines delete pfsense 2>/dev/null');
@@ -362,9 +356,6 @@ function crowdsec_resync_config()
             }
             if (!empty($cf['firewall_bouncer_log_level'])) {
                 $fw_conf['log_level'] = $cf['firewall_bouncer_log_level'];
-            }
-            if (!empty($cf['metrics_firewall_port'])) {
-                $fw_conf['prometheus']['listen_port'] = (int)$cf['metrics_firewall_port'];
             }
         }
     }
@@ -493,21 +484,15 @@ function crowdsec_after_form()
 
     function disableRemote()
     {
-        $('input[name="remote_lapi_host"]').prop('disabled', true);
-        $('input[name="remote_lapi_port"]').prop('disabled', true);
-        $('input[name="remote_agent_user"]').prop('disabled', true);
-        $('input[name="remote_agent_password"]').prop('disabled', true);
-        $('input[name="remote_fw_bouncer_api_key"]').prop('disabled', true);
+        $('#enable_lapi').closest('div.form-group').next().show();
+        $('#enable_lapi').closest('div.form-group').next().next().show();
         $('#enable_lapi').closest('div.panel-default').next().find('.panel-body').hide();
     }
     
     function enableRemote()
     {
-        $('input[name="remote_lapi_host"]').prop('disabled', false);
-        $('input[name="remote_lapi_port"]').prop('disabled', false);
-        $('input[name="remote_agent_user"]').prop('disabled', false);
-        $('input[name="remote_agent_password"]').prop('disabled', false);
-        $('input[name="remote_fw_bouncer_api_key"]').prop('disabled', false);
+        $('#enable_lapi').closest('div.form-group').next().hide();
+        $('#enable_lapi').closest('div.form-group').next().next().hide();
         $('#enable_lapi').closest('div.panel-default').next().find('.panel-body').show();
     }
     

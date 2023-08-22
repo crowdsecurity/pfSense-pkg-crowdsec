@@ -101,7 +101,6 @@
             <description>Enable a local API on the pfSense box. If disabled, use a remote LAPI on an external machine.</description>
             <type>checkbox</type>
             <default_value>on</default_value>
-            <enablefields>lapi_host,lapi_port</enablefields>
         </field>
         <field>
             <fielddescr>LAPI host</fielddescr>
@@ -204,13 +203,6 @@
             <type>input</type>
             <required>true</required>
             <default_value>6060</default_value>
-        </field>
-        <field>
-            <fielddescr>Port (firewall bouncer)</fielddescr>
-            <fieldname>metrics_firewall_port</fieldname>
-            <type>input</type>
-            <required>true</required>
-            <default_value>60601</default_value>
         </field>
 
         <!-- Crowdsec IPv4 blocklist settings -->
