@@ -22,6 +22,7 @@ require_once("config.inc");
 require_once("globals.inc");
 require_once("config.lib.inc");
 require_once("filter.inc");
+require_once("interfaces.inc");
 require_once("/usr/local/pkg/crowdsec/vendor/autoload.php");
 
 use Symfony\Component\Yaml\Yaml;
@@ -104,6 +105,12 @@ function crowdsec_validate_form($post, &$input_errors)
         }
         if (empty($post['lapi_host'])) {
             $input_errors[] = 'LAPI host is required for LAPI.';
+        }
+    }
+    // Apply rules on specifics interfaces
+    if (empty($post['rules_all_interfaces'])) {
+        if (empty($post['rules_interfaces_select'])) {
+            $input_errors[] = 'Please select at least one interface for rules.';
         }
     }
 }
@@ -489,6 +496,16 @@ function crowdsec_after_form()
         $('#enable_lapi').closest('div.panel-default').next().find('.panel-body').hide();
     }
     
+    function enableAllInterfaces()
+    {
+       $("#rules_all_interfaces").closest('div.form-group').next().hide("slow");
+    }
+    
+    function disableAllInterfaces()
+    {
+        $("#rules_all_interfaces").closest('div.form-group').next().show("slow");
+    }
+    
     function enableRemote()
     {
         $('#enable_lapi').closest('div.form-group').next().hide();
@@ -507,10 +524,24 @@ function crowdsec_after_form()
             }
         });
         
+        $('input[name="rules_all_interfaces"]').on( "change", function() {
+            if( $(this).prop('checked') == true ){
+             enableAllInterfaces();
+            } else {
+             disableAllInterfaces();
+            }
+        });
+        
         if( $('input[name="enable_lapi"]').prop('checked') == true ){
              disableRemote();
          } else {
              enableRemote();
+         }
+        
+        if( $('input[name="rules_all_interfaces"]').prop('checked') == true ){
+             enableAllInterfaces();
+         } else {
+             disableAllInterfaces();
          }
         
         $("form").submit(function(){
@@ -537,30 +568,37 @@ function crowdsec_generate_rules($type)
         case 'filter':
             global $config;
             $cf = $config['installedpackages']['crowdsec']['config'][0] ?? array();
+            $direction = !empty($cf['rules_direction']) && $cf['rules_direction'] !== 'any' ?
+                $cf['rules_direction'] : '';
+            $log = !empty($cf['rules_log']) ? "log" : '';
+            $tag = !empty($cf['rules_tag']) ? "tag " . $cf['rules_tag'] : '';
+            $interfaces = '';
+            if(empty($cf['rules_all_interfaces'])){
+                $selected_interfaces = explode(',', $cf['rules_interfaces_select']);
+                if($selected_interfaces){
+                    $interfaces = 'on {';
+                    foreach($selected_interfaces as $selected_interface){
+                        $interface = get_real_interface($selected_interface);
+                        $interfaces .= " $interface ";
+                    }
+                    $interfaces .= '}';
+                }
 
-            if (!empty($cf['enable_block_v4'])) {
+            }
+
+            if (!empty($cf['enable_rule_v4'])) {
                 $rules .= "block drop";
-                $direction = !empty($cf['block_v4_direction']) && $cf['block_v4_direction'] !== 'any' ?
-                    $cf['block_v4_direction'] : '';
-                $log = !empty($cf['block_v4_log']) ? "log" : '';
-                $tag = !empty($cf['block_v4_tag']) ? "tag " . $cf['block_v4_tag'] : '';
-
-                $rules .= ' ' . $direction . ' ' . $log .
-                          ' quick inet from <crowdsec_blacklists> to any label "CrowdSec IPv4"';
+                $rules .= ' ' . $direction . ' '  . $log . ' ' .
+                          ' quick '. $interfaces. ' inet from <crowdsec_blacklists> to any label "CrowdSec IPv4"';
                 if (!empty($tag)) {
                     $rules .= ' ' . $tag;
                 }
                 $rules .= "\n";
             }
-            if (!empty($cf['enable_block_v6'])) {
+            if (!empty($cf['enable_rule_v6'])) {
                 $rules .= "block drop";
-                $direction = !empty($cf['block_v6_direction']) && $cf['block_v6_direction'] !== 'any' ?
-                    $cf['block_v6_direction'] : '';
-                $log = !empty($cf['block_v6_log']) ? "log" : '';
-                $tag = !empty($cf['block_v6_tag']) ? "tag " . $cf['block_v6_tag'] : '';
-
-                $rules .= ' ' . $direction . ' ' . $log .
-                          ' quick inet6 from <crowdsec6_blacklists> to any label "CrowdSec IPv6"';
+                $rules .= ' ' . $direction  . $log . ' ' .
+                          ' quick '. $interfaces.' inet6 from <crowdsec6_blacklists> to any label "CrowdSec IPv6"';
                 if (!empty($tag)) {
                     $rules .= ' ' . $tag;
                 }
