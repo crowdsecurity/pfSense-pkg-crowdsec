@@ -228,6 +228,7 @@
             <type>interfaces_selection</type>
             <description>Select the interfaces on which to apply rules</description>
             <size>1</size>
+            <hideinterfaceregex>(loopback)</hideinterfaceregex>
             <multiple/>
         </field>
         <field>
