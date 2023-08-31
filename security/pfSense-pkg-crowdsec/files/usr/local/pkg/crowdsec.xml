@@ -41,7 +41,8 @@
     <service>
         <name>crowdsec_firewall</name>
         <rcfile>crowdsec_firewall.sh</rcfile>
-        <executable>crowdsec-firewall-bouncer</executable>
+        <!-- we must truncate the name to search at 19 characters due to a FreeBSD/pgrep limitation -->
+        <executable>crowdsec-firewall-b</executable>
         <description>Crowdsec Firewall remediation</description>
     </service>
     <tabs>
