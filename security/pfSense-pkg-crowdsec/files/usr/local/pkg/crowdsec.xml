@@ -34,8 +34,16 @@
     </menu>
     <service>
         <name>crowdsec</name>
-        <rcfile>pfsense_crowdsec</rcfile>
-        <description>Crowdsec service</description>
+        <rcfile>crowdsec.sh</rcfile>
+        <executable>crowdsec</executable>
+        <description>Crowdsec log processor and Local API</description>
+    </service>
+    <service>
+        <name>crowdsec_firewall</name>
+        <rcfile>crowdsec_firewall.sh</rcfile>
+        <!-- we must truncate the name to search at 19 characters due to a FreeBSD/pgrep limitation -->
+        <executable>crowdsec-firewall-b</executable>
+        <description>Crowdsec Firewall remediation</description>
     </service>
     <tabs>
         <tab>
@@ -88,7 +96,7 @@
             <fielddescr></fielddescr>
             <fieldname>firewall_info</fieldname>
             <type>info</type>
-            <description>Add the malevolent IPs detected by the log processor or from the community/third party blocklists to the pfSense firewall. Recommended.</description>
+            <description>Feed the blocklists to the pfSense firewall. Recommended.</description>
         </field>
 
         <field>
@@ -98,7 +106,7 @@
         <field>
             <fielddescr>Enable</fielddescr>
             <fieldname>enable_lapi</fieldname>
-            <description>Enable a local API on the pfSense box. If disabled, use a remote LAPI on an external machine.</description>
+            <description>Enable a local API on the pfSense box. Used by log processor and remediation components. If disabled, use a remote LAPI on an external machine.</description>
             <type>checkbox</type>
             <default_value>on</default_value>
         </field>
@@ -106,7 +114,7 @@
             <fielddescr>LAPI host</fielddescr>
             <fieldname>lapi_host</fieldname>
             <type>input</type>
-            <description>Host name or IP. Change this to expose the LAPI to the LAN, or to use an external LAPI. For example you can have one or more servers running only the Log Processor (agent) which report to the LAPI in this pfSense machine. Otherwise, leave the default value (127.0.0.1).</description>
+            <description>Host name or IP. Change this to expose the LAPI to the LAN. For example you can have other servers running only the Log Processor (agent) which report to the LAPI in this pfSense machine. Otherwise, leave the default value (127.0.0.1).</description>
             <default_value>127.0.0.1</default_value>
         </field>
         <field>
@@ -124,38 +132,38 @@
             <fielddescr></fielddescr>
             <fieldname>remote_lapi_info</fieldname>
             <type>info</type>
-            <description><![CDATA[You will need to register the log processor and the bouncer in the LAPI machine, then report here their connection credentials.<br/><br/>Recommended if:<br/><ul><li>you have a pre-existing installation, maybe running on linux</li><li>you want more control over the configuration, backup/restore, need a bigger machine or a postgres database</li><li>you want more control over the running versions or want to run it on docker, k8s</li></ul><p>To retrieve the connection credentials, run the following commands on the remote machine:</p><pre># cscli machines add pfsense --auto -f -</pre><p>and</p><pre># cscli bouncers add pfsense-firewall</pre>]]></description>
+            <description><![CDATA[You will need to register the log processor and the bouncer in the LAPI machine, then report here their connection credentials.<br/><br/>Recommended if:<br/><ul><li>you have a pre-existing installation, maybe running on linux</li><li>you want more control over the configuration, backup/restore, need a bigger machine or a postgres database</li><li>you want more control over the running versions or want to run them on docker, k8s</li></ul><p>To retrieve the connection credentials, run the following commands on the remote machine:</p><pre># cscli machines add pfsense --auto -f -</pre><p>and</p><pre># cscli bouncers add pfsense-firewall</pre>]]></description>
         </field>
         <field>
             <fielddescr>Remote LAPI host</fielddescr>
             <fieldname>remote_lapi_host</fieldname>
             <type>input</type>
-            <description>Host name or IP. Change this to expose the LAPI to the LAN, or to use an external LAPI. For example you can have one or more servers running only the Log Processor (agent) which report to the LAPI in this pfSense machine. Otherwise, leave the default value (127.0.0.1).</description>
+            <description>Host name or IP.</description>
         </field>
         <field>
             <fielddescr>Remote LAPI port</fielddescr>
             <fieldname>remote_lapi_port</fieldname>
             <type>input</type>
-            <description>Port number for the LAPI endpoint. Change in case of conflict with other services.</description>
+            <description>Port number of the LAPI endpoint.</description>
             <default_value>8080</default_value>
         </field>
         <field>
             <fielddescr>User</fielddescr>
             <fieldname>remote_agent_user</fieldname>
             <type>input</type>
-            <description>Name of this machine in the remote LAPI</description>
+            <description>Name of the pfSense machine in the remote LAPI</description>
         </field>
         <field>
             <fielddescr>Password</fielddescr>
             <fieldname>remote_agent_password</fieldname>
             <type>password</type>
-            <description>Password of this machine in the remote LAPI</description>
+            <description>Password of the pfSense machine in the remote LAPI</description>
         </field>
         <field>
             <fielddescr>Firewall bouncer API key</fielddescr>
             <fieldname>remote_fw_bouncer_api_key</fieldname>
             <type>password</type>
-            <description>API key of this bouncer in the remote LAPI</description>
+            <description>API key for the pfSense bouncer in the remote LAPI</description>
         </field>
         <field>
             <name>Log level</name>
@@ -240,7 +248,7 @@
                 <option><name>Any (inbound + outbound)</name><value>any</value></option>
                 <option><name>In (inbound)</name><value>in</value></option>
             </options>
-            <default_value>any</default_value>
+            <default_value>in</default_value>
         </field>
         <field>
             <fielddescr>Log</fielddescr>
@@ -254,11 +262,17 @@
             <description></description>
         </field>
         <field>
+            <fielddescr></fielddescr>
+            <fieldname>enable_rule_info</fieldname>
+            <type>info</type>
+            <description><![CDATA[The actual rules may be slightly different according to the above options. Check /var/log/system.log]]></description>
+        </field>
+        <field>
             <fielddescr>Enable CrowdSec IPv4 blocklist rule</fielddescr>
             <fieldname>enable_rule_v4</fieldname>
             <default_value>on</default_value>
             <type>checkbox</type>
-            <description><![CDATA[block drop {direction} {log} quick on {interfaces} inet from crowdsec_blacklists to any label "CrowdSec IPv4" tag {tag}.]]></description>
+            <description><![CDATA[block drop {direction} {log} quick on {interfaces} inet from crowdsec_blacklists to any label "CrowdSec IPv4" tag {tag}]]></description>
         </field>
         <!-- Crowdsec IPv6 blocklist settings -->
 
@@ -267,7 +281,7 @@
             <fieldname>enable_rule_v6</fieldname>
             <default_value>on</default_value>
             <type>checkbox</type>
-            <description><![CDATA[block drop {direction} {log} quick on {interfaces} inet6 from crowdsec6_blacklists to any label "CrowdSec IPv6" tag {tag}.]]></description>
+            <description><![CDATA[block drop {direction} {log} quick on {interfaces} inet6 from crowdsec6_blacklists to any label "CrowdSec IPv6" tag {tag}]]></description>
         </field>
 
     </fields>
