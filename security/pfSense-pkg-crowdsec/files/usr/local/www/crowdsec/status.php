@@ -121,7 +121,7 @@ $content = <<<EOT
     });
     </script>
 <div id="services">
-  <a href="status_services.php">Service status</a>: security engine <span id="crowdsec-status"><i class="fa fa-spinner fa-spin"></i></span> - firewall remediation <span id="crowdsec-firewall-status"><i class="fa fa-spinner fa-spin"></i></span>
+  <a href="/status_services.php">Service status</a>: security engine <span id="crowdsec-status"><i class="fa fa-spinner fa-spin"></i></span> - firewall remediation <span id="crowdsec-firewall-status"><i class="fa fa-spinner fa-spin"></i></span>
 </div>
 <div id="tabs" style="display:none;">
   <ul>
