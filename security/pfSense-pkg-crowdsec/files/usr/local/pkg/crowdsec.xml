@@ -248,7 +248,7 @@
                 <option><name>Any (inbound + outbound)</name><value>any</value></option>
                 <option><name>In (inbound)</name><value>in</value></option>
             </options>
-            <default_value>any</default_value>
+            <default_value>in</default_value>
         </field>
         <field>
             <fielddescr>Log</fielddescr>

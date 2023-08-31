@@ -58,21 +58,14 @@
         </p>
 
         <p>
-            It must be noted that the <a href="https://docs.netgate.com/pfsense/en/latest/config/advanced-admin.html#login-protection">Login Protection</a>
-            service which is enabled by default on pfSense can be triggered and block a brute force attacker before CrowdSec does, because it's more
-            sensitive. Still, some attacks that are not detected by Login Protection will be detected by CrowdSec and shared. However, you may need
-            to temporarily disable Login Protection to test CrowdSec.
-        </p>
-
-        <p>
             You can add scenarios to detect other types of attack on the pfSense server, or connect
             <a href="https://doc.crowdsec.net/docs/next/user_guides/multiserver_setup">other CrowdSec log processors</a>
             to the same LAPI node. Other types of remediation are possible (ex. captcha test for scraping attempts).
         </p>
 
         <p>
-            We recommend you to <a href="https://app.crowdsec.net/">register to the Console</a>. This helps you manage your instances,
-            and us to have better overall metrics.
+            We recommend you to <a href="https://app.crowdsec.net/">register to the Console</a>, especially if you protect several
+            machines.
         </p>
 
         <p>
@@ -128,7 +121,7 @@
 
         <p>
             Both services can be restarted from <a href="/status_services.php">Status/Services</a>.
-            The equivalent shell commands are "service crowdsec status/start/stop/reload/restart" and "service crowdsec_firewall status/start/stop/restart".
+            The equivalent shell commands are <code>service crowdsec.sh start/stop/restart</code> and <code>service crowdsec_firewall.sh start/stop/restart</code>, note the <code>.sh</code>.
             They can be run from <a href="/diag_command.php">Diagnostics/Command Prompt</a> as well as from ssh.
         </p>
 
@@ -138,7 +131,7 @@
             acquisition issue and we need to match the application behavior with the content of the acquired logs.
         </p>
 
-        <h3>View blocked IPs</h3>
+        <h3>Viewing blocked IPs</h3>
 
         <p>
             You can see the tables of the blocked IPs in <a href="/diag_tables.php">Diagnostics/Tables</a> or from 
@@ -196,6 +189,13 @@
 	    logs from the beginning, so it could ban you even if you failed ssh
 	    login 10 times in 30 seconds two hours before installing it.
 	</p>
+
+        <p>
+            It must be noted that the <a href="https://docs.netgate.com/pfsense/en/latest/config/advanced-admin.html#login-protection">Login Protection</a>
+            service which is enabled by default on pfSense can be triggered - and block a brute force attacker - before CrowdSec does,
+            because it's more sensitive. Still, some attacks that are not detected by Login Protection will be detected by CrowdSec and shared.
+            If you need more CrowdSec tests you may want to temporarily disable Login Protection, depending on the scenario.
+        </p>
 
         <p>
             By default the FreeBSD version of CrowdSec does not install any whitelist.
