@@ -34,8 +34,15 @@
     </menu>
     <service>
         <name>crowdsec</name>
-        <rcfile>pfsense_crowdsec</rcfile>
-        <description>Crowdsec service</description>
+        <rcfile>crowdsec.sh</rcfile>
+        <executable>crowdsec</executable>
+        <description>Crowdsec log processor and Local API</description>
+    </service>
+    <service>
+        <name>crowdsec_firewall</name>
+        <rcfile>crowdsec_firewall.sh</rcfile>
+        <executable>crowdsec-firewall-bouncer</executable>
+        <description>Crowdsec Firewall remediation</description>
     </service>
     <tabs>
         <tab>

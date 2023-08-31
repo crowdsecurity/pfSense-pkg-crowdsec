@@ -376,30 +376,9 @@ function crowdsec_resync_config()
     if ($crowdsec_conf != $crowdsec_conf_orig) {
         set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
     }
-    // Handle services management
-    if ($should_use_crowdsec) {
-        mwexec('service crowdsec enable');
-        // If we don't stop, the start command failed with message: crowdsec already running?
-        if(is_cs_service_running('crowdsec')){
-            mwexec("service crowdsec stop");
-        }
-        mwexec("service crowdsec start");
-    } else {
-        mwexec('service crowdsec stop');
-        mwexec('service crowdsec disable');
-    }
-
-    if ($should_use_firewall) {
-        mwexec('service crowdsec_firewall enable');
-        // If we don't stop, the start command failed with message: crowdsec_firewall already running?
-        if(is_cs_service_running('crowdsec_firewall')){
-            mwexec("service crowdsec_firewall stop");
-        }
-        mwexec("service crowdsec_firewall start");
-    } else {
-        mwexec('service crowdsec_firewall stop');
-        mwexec('service crowdsec_firewall disable');
-    }
+    // Handle services management, will also stop a service if disabled
+    mwexec('service crowdsec.sh restart');
+    mwexec('service crowdsec_firewall.sh restart');
 
     // Check service statuses and notify user
     $notice_content = 'Settings saved';
