@@ -13,13 +13,13 @@
     <div id="introduction" class="tab-pane fade in active">
         <img src="images/crowdsec.png" height="80" alt="CrowdSec logo with 3 purple and orange alpacas crowd in purple sec in orange" />
 
-        <h2>Quick Start</h2>
+        <h2>Configuration</h2>
 
         <div class="alert alert-info">
            Ensure that you are <a href="https://docs.netgate.com/pfsense/en/latest/config/advanced-misc.html#ram-disk-settings">not using a RAM disk</a>
-           for the /var directory. It contains the persistent CrowdSec database and GeoIP tables.
-           If you really need a RAM disk, you can still do threat analysis and remediation but you will
-           need to connect to an existing CrowdSec instance.
+           for the /var directory. The persistent CrowdSec database and GeoIP tables are in /var/db.
+           If you really need a RAM disk, you can still do log processing and remediation but you will
+           need to connect to a CrowdSec LAPI on a different machine.
         </div>
 
         <p>
@@ -28,9 +28,8 @@
         </p>
 
         <p>
-            Do not use the commands "sysrc" or "service" to enable and start the crowdsec or bouncer
-            services, it is not required with pfSense. Do not create a <code>pf.conf</code> file.
-            If you edit the configuration files, some setting may be overwritten by the pfsense package.
+            Do not use the shell commands <code>sysrc</code> or <code>service</code> to enable and start the crowdsec services,
+            it is not required with pfSense. Do not create a <code>pf.conf</code> file.
         </p>
 
         <p>
@@ -38,37 +37,47 @@
             is read-only, with the exception of decision revocation (unban).
             Most actions require the shell or the <a href="https://app.crowdsec.net">CrowdSec Console</a>.
             For simple things, <a href="/diag_command.php">Diagnostics/Command Prompt</a> works as well as ssh.
+            If you edit the crowdsec configuration files, some setting may be overwritten by the pfSense package.
         </p>
 
-        <h2>Walkthrough</h2>
+        <p>
+            If you are reading this on your pfSense machine, a CrowdSec <a href="https://doc.crowdsec.net/docs/next/getting_started/security_engine_intro">Security Engine</a>
+            (threat detection) and a <a href="https://docs.crowdsec.net/docs/bouncers/firewall/">Firewall Bouncer</a> (remediation) are already installed.</p>
 
-        <p>If you are reading this, a CrowdSec <a href="https://doc.crowdsec.net/docs/next/getting_started/security_engine_intro">Security Engine</a>
-        (threat detection) and a <a href="https://docs.crowdsec.net/docs/bouncers/firewall/">Firewall Bouncer</a> (remediation) are already installed
-        in your pfSense machine.</p>
+            The following scenarios are enabled by default:
 
-        The following protections are enabled by default on all interfaces:
+            <ul>
+                <li>portscan</li>
+                <li>ssh brute-force</li>
+                <li>pfSense admin brute-force</li>
+            </ul>
 
-        <ul>
-            <li>portscan</li>
-            <li>ssh brute-force</li>
-            <li>pfSense admin brute-force</li>
-        </ul>
+            These scenarios will trigger a ban on the attacking IP (4 hours by default) and report it to the CrowdSec Central API
+            (meaning <a href="https://docs.crowdsec.net/docs/concepts/">timestamp, scenario, attacking IP</a>), contributing to the
+            Community Blocklist.
+        </p>
 
-        These scenarios will trigger a ban on the attacking IP (4 hours by default) and report it to the CrowdSec Central API
-        (meaning <a href="https://docs.crowdsec.net/docs/concepts/">timestamp, scenario, attacking IP</a>), contributing to the
-        Community Blocklist.</p>
+        <p>
+            It must be noted that the <a href="https://docs.netgate.com/pfsense/en/latest/config/advanced-admin.html#login-protection">Login Protection</a>
+            service which is enabled by default on pfSense can be triggered and block a brute force attacker before CrowdSec does, because it's more
+            sensitive. Still, some attacks that are not detected by Login Protection will be detected by CrowdSec and shared. However, you may need
+            to temporarily disable Login Protection to test CrowdSec.
+        </p>
 
-        <p>You can add scenarios to detect other types of attack on the pfSense server, or
-        <a href="https://doc.crowdsec.net/docs/next/user_guides/multiserver_setup">any other log processor</a>
-        connected to the same LAPI node. Other types of remediation are possible (ex. captcha test for scraping attempts).</p>
+        <p>
+            You can add scenarios to detect other types of attack on the pfSense server, or connect
+            <a href="https://doc.crowdsec.net/docs/next/user_guides/multiserver_setup">other CrowdSec log processors</a>
+            to the same LAPI node. Other types of remediation are possible (ex. captcha test for scraping attempts).
+        </p>
 
         <p>
             We recommend you to <a href="https://app.crowdsec.net/">register to the Console</a>. This helps you manage your instances,
             and us to have better overall metrics.
         </p>
 
-        <p>Please refer to the <a href="https://crowdsec.net/blog/category/tutorial/">tutorials</a> to explore
-        the possibilities.</p>
+        <p>
+            Please refer to the <a href="https://crowdsec.net/blog/category/tutorial/">tutorials</a> to explore the possibilities.
+        </p>
 
         <div>
             <a class="btn btn-default btn-info" href="https://doc.crowdsec.net/docs/intro">
