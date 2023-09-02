@@ -43,6 +43,10 @@ $css = <<<EOT
   font-weight: bolder !important;
 }
 
+.crowdsecTable {
+    table-layout: auto;
+}
+
 .loading {
 text-align:center;
 padding: 4rem;
