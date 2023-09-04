@@ -2,6 +2,7 @@
 
 PORTNAME=	pfSense-pkg-crowdsec
 PORTVERSION=	0.0.3
+PORTREVISION=	1
 CATEGORIES=	security
 MASTER_SITES=	# empty
 DISTFILES=	# empty
@@ -12,7 +13,7 @@ COMMENT=	Crowdsec package for pfSense
 
 LICENSE=	APACHE20
 
-RUN_DEPENDS=	crowdsec>=1.5.3.r4_9:security/crowdsec \
+RUN_DEPENDS=	crowdsec>=1.5.3.r6_1:security/crowdsec \
 		crowdsec-firewall-bouncer>=0.0.28.r3_5:security/crowdsec-firewall-bouncer
 
 NO_BUILD=	yes
