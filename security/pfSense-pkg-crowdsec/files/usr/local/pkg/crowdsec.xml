@@ -106,9 +106,14 @@
         <field>
             <fielddescr>Enable</fielddescr>
             <fieldname>enable_lapi</fieldname>
-            <description>Enable a local API on the pfSense box. Used by log processor and remediation components. If disabled, use a remote LAPI on an external machine.</description>
             <type>checkbox</type>
             <default_value>on</default_value>
+        </field>
+        <field>
+            <fielddescr></fielddescr>
+            <fieldname>enable_lapi_info</fieldname>
+            <type>info</type>
+            <description><![CDATA[<p>Enable a local API on the pfSense box. Used by log processor and remediation components.</p><p>Recommended unless:</p><ul><li>you have a pre-existing main installation, maybe running on linux</li><li>you want more control over the configuration, backup/restore, need a bigger machine or a postgres database</li><li>you want more control over the running versions or want to run them on docker, k8s</li></ul><p>If disabled, use a remote LAPI on an external machine.</p>]]></description>
         </field>
         <field>
             <fielddescr>LAPI host</fielddescr>
@@ -132,7 +137,7 @@
             <fielddescr></fielddescr>
             <fieldname>remote_lapi_info</fieldname>
             <type>info</type>
-            <description><![CDATA[You will need to register the log processor and the bouncer in the LAPI machine, then report here their connection credentials.<br/><br/>Recommended if:<br/><ul><li>you have a pre-existing installation, maybe running on linux</li><li>you want more control over the configuration, backup/restore, need a bigger machine or a postgres database</li><li>you want more control over the running versions or want to run them on docker, k8s</li></ul><p>To retrieve the connection credentials, run the following commands on the remote machine:</p><pre># cscli machines add pfsense --auto -f -</pre><p>and</p><pre># cscli bouncers add pfsense-firewall</pre>]]></description>
+            <description><![CDATA[<p>You will need to register the log processor and the bouncer in the LAPI machine, then report here their connection credentials.</p><p>Run the following commands on the remote machine:</p><pre># cscli machines add pfsense --auto -f -</pre><p>and</p><pre># cscli bouncers add pfsense-firewall</pre>]]></description>
         </field>
         <field>
             <fielddescr>Remote LAPI host</fielddescr>

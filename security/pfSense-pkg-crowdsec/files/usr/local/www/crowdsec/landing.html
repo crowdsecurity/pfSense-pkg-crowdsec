@@ -16,20 +16,32 @@
         <h2>Configuration</h2>
 
         <div class="alert alert-info">
-           Ensure that you are <a href="https://docs.netgate.com/pfsense/en/latest/config/advanced-misc.html#ram-disk-settings">not using a RAM disk</a>
-           for the /var directory. The persistent CrowdSec database and GeoIP tables are in /var/db.
-           If you really need a RAM disk, you can still do log processing and remediation but you will
-           need to connect to a CrowdSec LAPI on a different machine.
+           <p>
+               Do not use the shell commands <code>sysrc</code> or <code>service</code> to enable and start the crowdsec services,
+               it is not required with pfSense. Do not create a <code>pf.conf</code> file.
+           </p>
+           <p>
+               <b>RAM disk</b>: before running CrowdSec, ensure that you are <a href="https://docs.netgate.com/pfsense/en/latest/config/advanced-misc.html#ram-disk-settings">not using a RAM disk</a>
+               for the /var directory. The persistent CrowdSec database and GeoIP tables are in /var/db.
+               If you really need a RAM disk, you can still do log processing and remediation but you will
+               need to connect to a remote LAPI.
+           </p>
+           <p>
+               <b>Backup</b>: for the same reasons, the CrowdSec set-up is not transferred when you restore a pfSense backup, and you'll need to reconfigure it
+               or backup separately.
+           </p>
         </div>
 
         <p>
-            Go to the <a href="/pkg_edit.php?xml=crowdsec.xml">Settings</a> tab and enable <b>Log Processor</b> and 
-            <b>Firewall Bouncer</b>. Click Save.
+            If you are reading this on your pfSense machine, a CrowdSec <a href="https://doc.crowdsec.net/docs/next/getting_started/security_engine_intro">Security Engine</a>
+            (threat detection) and a <a href="https://docs.crowdsec.net/docs/bouncers/firewall/">Firewall remediation component</a> (bouncer) are already installed.
         </p>
 
         <p>
-            Do not use the shell commands <code>sysrc</code> or <code>service</code> to enable and start the crowdsec services,
-            it is not required with pfSense. Do not create a <code>pf.conf</code> file.
+            Go to the <a href="/pkg_edit.php?xml=crowdsec.xml">Settings</a> tab. The <b>Log Processor</b>,
+            <b>Remediation component</b> and <b>Local API</b> should be enabled. Click Save. If you
+            already have a CrowdSec installation on another machine, you can connect the two by disabling Local API
+            and filling the fields in the <b>Remote LAPI</b> section.
         </p>
 
         <p>
@@ -37,13 +49,11 @@
             is read-only, with the exception of decision revocation (unban).
             Most actions require the shell or the <a href="https://app.crowdsec.net">CrowdSec Console</a>.
             For simple things, <a href="/diag_command.php">Diagnostics/Command Prompt</a> works as well as ssh.
-            If you edit the crowdsec configuration files, some setting may be overwritten by the pfSense package.
+            You are free to edit the files in <code>/usr/local/etc/crowdsec</code>, but some setting may be overwritten
+            by the pfSense package as needed.
         </p>
 
         <p>
-            If you are reading this on your pfSense machine, a CrowdSec <a href="https://doc.crowdsec.net/docs/next/getting_started/security_engine_intro">Security Engine</a>
-            (threat detection) and a <a href="https://docs.crowdsec.net/docs/bouncers/firewall/">Firewall Bouncer</a> (remediation) are already installed.</p>
-
             The following scenarios are enabled by default:
 
             <ul>
@@ -52,7 +62,7 @@
                 <li>pfSense admin brute-force</li>
             </ul>
 
-            These scenarios will trigger a ban on the attacking IP (4 hours by default) and report it to the CrowdSec Central API
+            These will trigger a ban on the attacking IP (4 hours by default) and report it to the CrowdSec Central API
             (meaning <a href="https://docs.crowdsec.net/docs/concepts/">timestamp, scenario, attacking IP</a>), contributing to the
             Community Blocklist.
         </p>
@@ -64,12 +74,18 @@
         </p>
 
         <p>
+            If disk space is not an issue, you can <a href="https://docs.netgate.com/pfsense/en/latest/monitoring/logs/size.html">increase the maximum size</a>
+            of log files before they are compressed and rotated. This will help us in case you report some
+            acquisition issue and we need to match the application behavior with the content of the acquired logs.
+        </p>
+
+        <p>
             We recommend you to <a href="https://app.crowdsec.net/">register to the Console</a>, especially if you protect several
             machines.
         </p>
 
         <p>
-            Please refer to the <a href="https://crowdsec.net/blog/category/tutorial/">tutorials</a> to explore the possibilities.
+            Please refer to the <a href="https://crowdsec.net/blog/category/tutorial/">tutorials</a> to explore other possibilities.
         </p>
 
         <div>
@@ -87,7 +103,7 @@
             </a>
         </div>
 
-        <h3>Status page</h3>
+        <h3>Status tab</h3>
 
         <p>In the <a href="/crowdsec/status.php">Status</a> tab, you can see</p>
 
@@ -103,6 +119,8 @@
             All hub items are periodically upgraded with a cron job.
         </p>
 
+        <h3>Metrics tab</h3>
+
         <p>
             In the <a href="/crowdsec/metrics.php">Metrics</a> tab you can check if the logs are acquired and the
             events are triggered correctly. For real monitoring, you can fetch the same metrics with
@@ -110,25 +128,22 @@
             Telegraf or your favorite solution.
         </p>
 
-        <h3>Logs and service management</h3>
+        <h3>Logs</h3>
 
         <p>
             You can see the Security Engine logs in <a href="/status_logs_packages.php?pkg=crowdsec">Status/System 
             Logs/Packages/crowdsec</a>.
-            These are in <code>/var/log/crowdsec.log</code>.
+            These are in <code>/var/log/crowdsec/crowdsec.log</code>.
             The logs for the LAPI and bouncer are not available from the UI, they are in <code>crowdsec_api.log</code> and <code>crowdsec-firewall-bouncer.log</code>.
         </p>
 
-        <p>
-            Both services can be restarted from <a href="/status_services.php">Status/Services</a>.
-            The equivalent shell commands are <code>service crowdsec.sh start/stop/restart</code> and <code>service crowdsec_firewall.sh start/stop/restart</code>, note the <code>.sh</code>.
-            They can be run from <a href="/diag_command.php">Diagnostics/Command Prompt</a> as well as from ssh.
-        </p>
+        <h3>Service management</h3>
 
         <p>
-            If disk space is not an issue, you can <a href="https://docs.netgate.com/pfsense/en/latest/monitoring/logs/size.html">increase the maximum size</a>
-            of log files before they are compressed and rotated. This will help us in case you report some
-            acquisition issue and we need to match the application behavior with the content of the acquired logs.
+            Both services can be restarted from <a href="/status_services.php">Status/Services</a>.
+            The equivalent shell commands are <code>service crowdsec.sh start/stop/restart</code> and <code>service crowdsec_firewall.sh start/stop/restart</code>,
+            note the ending <code>.sh</code>.
+            They can be run from <a href="/diag_command.php">Diagnostics/Command Prompt</a> as well as from ssh.
         </p>
 
         <h3>Viewing blocked IPs</h3>
@@ -143,7 +158,7 @@
             To show the same data with more context, use <code>cscli decisions list -a</code>.
         </p>
 
-        <h2>Adding data sources</h2>
+        <h3>Adding data sources</h3>
 
         <p>
             If a collection, parser or scenario can be applied to a software that you are running on pfSense,
@@ -157,7 +172,7 @@
             Remember to reload or restart CrowdSec when you add new data sources.
         </p>
 
-        <h2>Testing</h2>
+        <h3>Testing</h3>
 
         <p>
             A quick way to test that everything is working correctly end-to-end is to
@@ -203,7 +218,7 @@
             networks, you can use <code>cscli parers install crowdsecurity/whitelists</code> to whitelist them.
         </p>
 
-        <h2>Uninstalling</h2>
+        <h3>Uninstalling</h3>
 
         <p>
             In most cases, just remove the <code>crowdsec</code> package from
