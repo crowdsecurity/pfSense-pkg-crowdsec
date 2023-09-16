@@ -576,7 +576,7 @@ function crowdsec_generate_rules($type)
             }
             if (!empty($cf['enable_rule_v6'])) {
                 $rules .= "block drop";
-                $rules .= ' ' . $direction  . $log . ' ' .
+                $rules .= ' ' . $direction . ' ' . $log . ' ' .
                           ' quick '. $interfaces.' inet6 from <crowdsec6_blacklists> to any label "CrowdSec IPv6"';
                 if (!empty($tag)) {
                     $rules .= ' ' . $tag;
