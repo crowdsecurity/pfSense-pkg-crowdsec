@@ -23,6 +23,7 @@ require_once("globals.inc");
 require_once("config.lib.inc");
 require_once("filter.inc");
 require_once("interfaces.inc");
+require_once("util.inc");
 require_once("/usr/local/pkg/crowdsec/vendor/autoload.php");
 
 use Symfony\Component\Yaml\Yaml;
@@ -112,6 +113,10 @@ function crowdsec_validate_form($post, &$input_errors)
         if (empty($post['rules_interfaces_select'])) {
             $input_errors[] = 'Please select at least one interface for rules.';
         }
+    }
+    // Validate tags
+    if ($post['rules_tag'] && !is_validaliasname($post['rules_tag'])) {
+        $input_errors[] = gettext("Invalid tag value.");
     }
 }
 
