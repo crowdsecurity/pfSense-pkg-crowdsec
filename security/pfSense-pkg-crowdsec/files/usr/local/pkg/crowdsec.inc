@@ -292,6 +292,9 @@ function crowdsec_resync_config()
         // Modify Firewall bouncer configuration
         if (!empty($fw_conf)) {
             $fw_conf['api_key'] = '${API_KEY}';
+            if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
+                $fw_conf['api_url'] = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'] . '/';
+            }
         }
 
         // update config immediately because cscli needs .api.server.enable = true
@@ -358,9 +361,6 @@ function crowdsec_resync_config()
     if (!empty($cf['enable_fw_bouncer'])) {
         $should_use_firewall = true;
         if (!empty($fw_conf)) {
-            if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
-                $fw_conf['api_url'] = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'] . '/';
-            }
             if (!empty($cf['firewall_bouncer_log_level'])) {
                 $fw_conf['log_level'] = $cf['firewall_bouncer_log_level'];
             }
@@ -472,6 +472,7 @@ function crowdsec_after_form()
     {
         $('#enable_lapi').closest('div.form-group').next().show();
         $('#enable_lapi').closest('div.form-group').next().next().show();
+        $('#enable_lapi').closest('div.form-group').next().next().next().show();
         $('#enable_lapi').closest('div.panel-default').next().find('.panel-body').hide();
     }
     
@@ -489,6 +490,7 @@ function crowdsec_after_form()
     {
         $('#enable_lapi').closest('div.form-group').next().hide();
         $('#enable_lapi').closest('div.form-group').next().next().hide();
+        $('#enable_lapi').closest('div.form-group').next().next().next().hide();
         $('#enable_lapi').closest('div.panel-default').next().find('.panel-body').show();
     }
     
