@@ -7,6 +7,7 @@ const CrowdSec = (function () {
     'use strict';
 
     const api_url = '/crowdsec/endpoint/api.php';
+    const crowdsec_path = '/usr/local/etc/crowdsec/';
     const _refreshTemplate = '<button class="btn btn-default" type="button" title="Refresh"><span class="icon fa fa-refresh"></span></button>';
 
     const _dataFormatters = {
@@ -217,7 +218,7 @@ const CrowdSec = (function () {
                     name: row.name,
                     status: row.status,
                     local_version: row.local_version || ' ',
-                    local_path: row.local_path || ' '
+                    local_path: row.local_path ? row.local_path.replace(crowdsec_path,'') : ' '
                 });
             });
             $(id + ' table').bootgrid('clear').bootgrid('append', rows);
@@ -235,7 +236,7 @@ const CrowdSec = (function () {
                     name: row.name,
                     status: row.status,
                     local_version: row.local_version || ' ',
-                    local_path: row.local_path || ' ',
+                    local_path: row.local_path ? row.local_path.replace(crowdsec_path,'') : ' ',
                     description: row.description || ' '
                 });
             });
@@ -254,7 +255,7 @@ const CrowdSec = (function () {
                     name: row.name,
                     status: row.status,
                     local_version: row.local_version || ' ',
-                    local_path: row.local_path || ' ',
+                    local_path: row.local_path ? row.local_path.replace(crowdsec_path,'') : ' ',
                     description: row.description || ' '
                 });
             });
@@ -273,7 +274,7 @@ const CrowdSec = (function () {
                     name: row.name,
                     status: row.status,
                     local_version: row.local_version || ' ',
-                    local_path: row.local_path || ' ',
+                    local_path: row.local_path ? row.local_path.replace(crowdsec_path,'') : ' ',
                     description: row.description || ' '
                 });
             });
