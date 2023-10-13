@@ -30,7 +30,7 @@
     <menu>
         <name>CrowdSec</name>
         <section>Services</section>
-        <url>/crowdsec/landing.php</url>
+        <url>/pkg_edit.php?xml=crowdsec.xml</url>
     </menu>
     <menu>
         <name>CrowdSec Metrics</name>
@@ -57,18 +57,20 @@
         <executable>crowdsec-firewall-b</executable>
         <description>Crowdsec Firewall remediation</description>
     </service>
-    <tabs>
-        <tab>
-            <text>CrowdSec</text>
-            <url>/crowdsec/landing.php</url>
-        </tab>
-        <tab>
-            <text>Settings</text>
-            <url>/pkg_edit.php?xml=crowdsec.xml</url>
-            <active/>
-        </tab>
-    </tabs>
     <fields>
+        <field>
+            <name>Documentation</name>
+            <type>listtopic</type>
+        </field>
+        <field>
+            <fielddescr>Warning</fielddescr>
+            <fieldname>just_info</fieldname>
+            <type>info</type>
+            <description> <![CDATA[
+		Please follow <a href="/crowdsec/landing.php">this documentation</a> before taking any action.
+		]]></description>
+        </field>
+
         <field>
             <name>Log processor (CrowdSec agent)</name>
             <type>listtopic</type>
