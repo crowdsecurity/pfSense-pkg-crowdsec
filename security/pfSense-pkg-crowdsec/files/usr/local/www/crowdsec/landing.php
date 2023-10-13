@@ -24,7 +24,7 @@ require_once("globals.inc");
 
 $g['disablehelpicon'] = true;
 
-$pgtitle = array(gettext("Security"), gettext("CrowdSec"));
+$pgtitle = array(gettext("Services"), gettext("CrowdSec"));
 $pglinks = ['@self', '@self', '@self'];
 $shortcut_section = "crowdsec";
 
@@ -33,8 +33,6 @@ include("head.inc");
 $tab_array = array();
 $tab_array[] = array("CrowdSec", true, "/crowdsec/landing.php");
 $tab_array[] = array("Settings", false, "/pkg_edit.php?xml=crowdsec.xml&amp;id=0");
-$tab_array[] = array("Status", false, "/crowdsec/status.php");
-$tab_array[] = array("Metrics", false, "/crowdsec/metrics.php");
 display_top_tabs($tab_array);
 
 require("./landing.html");

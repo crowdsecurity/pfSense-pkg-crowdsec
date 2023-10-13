@@ -25,12 +25,24 @@
 	]]>
     </copyright>
     <name>CrowdSec</name>
-    <title>Security/CrowdSec</title>
+    <title>Services/CrowdSec</title>
     <include_file>/usr/local/pkg/crowdsec.inc</include_file>
     <menu>
         <name>CrowdSec</name>
         <section>Services</section>
         <url>/crowdsec/landing.php</url>
+    </menu>
+    <menu>
+        <name>CrowdSec Metrics</name>
+        <section>Diagnostics</section>
+        <configfile>crowdsec.xml</configfile>
+        <url>/crowdsec/metrics.php</url>
+    </menu>
+    <menu>
+        <name>CrowdSec Status</name>
+        <section>Status</section>
+        <configfile>crowdsec.xml</configfile>
+        <url>/crowdsec/status.php</url>
     </menu>
     <service>
         <name>crowdsec</name>
@@ -54,14 +66,6 @@
             <text>Settings</text>
             <url>/pkg_edit.php?xml=crowdsec.xml</url>
             <active/>
-        </tab>
-        <tab>
-            <text>Status</text>
-            <url>/crowdsec/status.php</url>
-        </tab>
-        <tab>
-            <text>Metrics</text>
-            <url>/crowdsec/metrics.php</url>
         </tab>
     </tabs>
     <fields>
