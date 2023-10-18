@@ -1,8 +1,7 @@
 # $FreeBSD$
 
 PORTNAME=	pfSense-pkg-crowdsec
-PORTVERSION=	0.0.3
-PORTREVISION=	2
+PORTVERSION=	0.0.4
 CATEGORIES=	security
 MASTER_SITES=	# empty
 DISTFILES=	# empty
@@ -13,8 +12,8 @@ COMMENT=	Crowdsec package for pfSense
 
 LICENSE=	APACHE20
 
-RUN_DEPENDS=	crowdsec>=1.5.3.r6_1:security/crowdsec \
-		crowdsec-firewall-bouncer>=0.0.28.r3_5:security/crowdsec-firewall-bouncer
+RUN_DEPENDS=	crowdsec>=1.5.4:security/crowdsec \
+		crowdsec-firewall-bouncer>=0.0.28.r6:security/crowdsec-firewall-bouncer
 
 NO_BUILD=	yes
 NO_MTREE=	yes
@@ -67,7 +66,7 @@ do-install:
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/shortcuts/crowdsec.inc \
 			${STAGEDIR}${PREFIX}/www/shortcuts
 	${INSTALL_DATA} ${FILESDIR}/etc/inc/priv/crowdsec.priv.inc \
-    		${STAGEDIR}/etc/inc/priv
+		${STAGEDIR}/etc/inc/priv
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/crowdsec.inc \
 		${STAGEDIR}${PREFIX}/pkg
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/etc/crowdsec/feature.yaml \
