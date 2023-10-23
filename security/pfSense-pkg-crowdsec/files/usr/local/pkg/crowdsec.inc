@@ -281,6 +281,10 @@ function crowdsec_resync_config()
     $crowdsec_conf_orig = $crowdsec_conf;
     $fw_conf = get_yaml_content(CROWDSEC_FIREWALL_CONF);
     $fw_conf_orig = $fw_conf;
+
+    // end of beta, use mainstream branch
+    unset($crowdsec_conf['cscli']['hub_branch']);
+
     // Handle LAPI ON
     if (!empty($cf['enable_lapi'])) {
         $should_use_crowdsec = true;
@@ -399,7 +403,6 @@ function crowdsec_resync_config()
                 if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
                     $crowdsec_conf = get_yaml_content(CROWDSEC_CONF);
                     if (!empty($crowdsec_conf)) {
-                        $crowdsec_conf['cscli']['hub_branch'] = "pfsense-gui";
                         set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
                         shell_exec("cscli hub update");
                         exec("cscli --error collections install crowdsecurity/pfsense 2>&1", $output);
