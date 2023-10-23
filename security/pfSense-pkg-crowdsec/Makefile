@@ -62,8 +62,6 @@ do-install:
 					${STAGEDIR}${PREFIX}/www/crowdsec/js
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/css/jquery.bootgrid.min.css \
 				${STAGEDIR}${PREFIX}/www/crowdsec/css
-	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/images/crowdsec.png \
-				${STAGEDIR}${PREFIX}/www/crowdsec/images
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/shortcuts/crowdsec.inc \
 			${STAGEDIR}${PREFIX}/www/shortcuts
 	${INSTALL_DATA} ${FILESDIR}/etc/inc/priv/crowdsec.priv.inc \

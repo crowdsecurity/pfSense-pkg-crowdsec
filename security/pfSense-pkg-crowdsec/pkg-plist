@@ -21,7 +21,6 @@ www/crowdsec/css/jquery.bootgrid.min.css
 www/crowdsec/js/jquery.bootgrid.min.js
 www/crowdsec/js/jquery.bootgrid.fa.min.js
 www/crowdsec/js/moment.min.js
-www/crowdsec/images/crowdsec.png
 
 @dir /etc/inc/priv
 @dir /etc/inc
