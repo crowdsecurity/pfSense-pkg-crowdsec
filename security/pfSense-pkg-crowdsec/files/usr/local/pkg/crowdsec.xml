@@ -335,6 +335,4 @@
     <filter_rules_needed><![CDATA[crowdsec_generate_rules]]></filter_rules_needed>
 
     <custom_php_after_form_command>crowdsec_after_form();</custom_php_after_form_command>
-
-    <custom_php_after_head_command><![CDATA[crowdsec_after_head();]]></custom_php_after_head_command>
 </packagegui>

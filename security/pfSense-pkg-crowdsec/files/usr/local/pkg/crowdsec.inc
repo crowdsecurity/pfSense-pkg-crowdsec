@@ -33,7 +33,6 @@ use Symfony\Component\Yaml\Exception\DumpException;
 define('CROWDSEC_LAPI_CREDENTIALS', '/usr/local/etc/crowdsec/local_api_credentials.yaml');
 define('CROWDSEC_CONF', '/usr/local/etc/crowdsec/config.yaml');
 define('CROWDSEC_FIREWALL_CONF', '/usr/local/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml');
-define('CROWDSEC_SETTINGS_NOTICE', '/usr/local/www/crowdsec/settings-notice.txt');
 define('CROWDSEC_PFSENSE_COLLECTION', '/usr/local/etc/crowdsec/collections/pfsense.yaml');
 
 $g['disablehelpicon'] = true;
@@ -390,14 +389,16 @@ function crowdsec_resync_config()
     mwexec('service crowdsec_firewall.sh restart');
 
     // Check service statuses and notify user
-    $notice_content = 'Settings saved';
-    $notice_content .= $_POST ? '.' . PHP_EOL : ' during package installation.' . PHP_EOL;
+    $flash_class = 'success';
+    $flash_message = 'Settings saved';
+    $flash_message .= $_POST ? '.' . PHP_EOL : ' during package installation.' . PHP_EOL;
     if ($should_use_crowdsec || $should_use_firewall) {
         sleep(2);
         // Handle crowdsec service
         if ($should_use_crowdsec) {
             if (!is_cs_service_running('crowdsec')) {
-                $notice_content .= 'Crowdsec service is not running. Please check logs.' . PHP_EOL;
+                $flash_class = 'warning';
+                $flash_message .= 'Crowdsec service is not running. Please check logs.' . PHP_EOL;
             } else {
                 // Handle pfsense collection
                 if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
@@ -410,13 +411,14 @@ function crowdsec_resync_config()
                         shell_exec("service crowdsec reload");
 
                         if (!empty($output)) {
-                            $notice_content .= 'pfsense collection installation failed:  ' .
+                            $flash_danger = 'warning';
+                            $flash_message .= 'pfsense collection installation failed:  ' .
                                                htmlspecialchars($output[0]) . PHP_EOL;
 
-                            $notice_content .= 'Please run <b><i>cscli collections install crowdsecurity/pfsense</i></b> and <b><i>service crowdsec reload</i></b>.'
+                            $flash_message .= 'Please run <b><i>cscli collections install crowdsecurity/pfsense</i></b> and <b><i>service crowdsec reload</i></b>.'
                                                . PHP_EOL;
                         } else {
-                            $notice_content .= 'Installed collection crowdsecurity/pfsense.' . PHP_EOL;
+                            $flash_message .= 'Installed collection crowdsecurity/pfsense.' . PHP_EOL;
                         }
                     }
                 }
@@ -425,31 +427,19 @@ function crowdsec_resync_config()
         // Handle firewall bouncer
         if ($should_use_firewall) {
             if (!is_cs_service_running('crowdsec_firewall')) {
-                $notice_content .= 'Crowdsec firewall bouncer is not running. Please check logs.' . PHP_EOL;
+                $flash_class = 'warning';
+                $flash_message .= 'Crowdsec firewall bouncer is not running. Please check logs.' . PHP_EOL;
             }
         }
     }
 
     if (config_path_enabled('system', 'use_mfs_tmpvar')) {
-        $notice_content .= "pfsense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can modify this settings <a href='/system_advanced_misc.php'>in this page.</a" .
+        $flash_danger = 'warning';
+        $flash_message .= "pfsense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can modify this settings <a href='/system_advanced_misc.php'>in this page.</a" .
                            PHP_EOL;
     }
 
-    file_put_contents(CROWDSEC_SETTINGS_NOTICE, $notice_content);
-}
-
-/**
- * custom_php_after_head_command hook (setting edition after head)
- *
- * @return void
- */
-function crowdsec_after_head()
-{
-    $content = <<<EOF
-    <div id="crowdsec-notice" class="alert alert-success" style="display:none;"></div>
-EOF;
-
-    echo $content;
+    set_flash_message($flash_class, $flash_message);
 }
 
 /**
@@ -459,19 +449,6 @@ EOF;
  */
 function crowdsec_after_form()
 {
-    $notice_content = '';
-    if (file_exists(CROWDSEC_SETTINGS_NOTICE)) {
-        $file_content = '';
-        $fh = fopen(CROWDSEC_SETTINGS_NOTICE, 'r');
-        while ($line = fgets($fh)) {
-            $file_content .= '<p>' . trim($line) . '</p>';
-        }
-        fclose($fh);
-
-        $notice_content = "$('#crowdsec-notice').show().html('$file_content');";
-        unlink(CROWDSEC_SETTINGS_NOTICE);
-    }
-
     $content = <<<EOF
 <script type="text/javascript">
 //<![CDATA[
@@ -503,8 +480,6 @@ function crowdsec_after_form()
     }
     
     events.push(function() {
-        $notice_content
-        
         $('input[name="enable_lapi"]').on( "change", function() {
             if( $(this).prop('checked') == true ){
              disableRemote();
