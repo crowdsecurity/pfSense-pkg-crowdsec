@@ -33,13 +33,13 @@
         <url>/pkg_edit.php?xml=crowdsec.xml</url>
     </menu>
     <menu>
-        <name>CrowdSec Metrics</name>
+        <name>CrowdSec</name>
         <section>Diagnostics</section>
         <configfile>crowdsec.xml</configfile>
         <url>/crowdsec/metrics.php</url>
     </menu>
     <menu>
-        <name>CrowdSec Status</name>
+        <name>CrowdSec</name>
         <section>Status</section>
         <configfile>crowdsec.xml</configfile>
         <url>/crowdsec/status.php</url>
@@ -310,14 +310,14 @@
 
     <custom_php_install_command>
         <![CDATA[
-		crowdsec_install();
-		]]>
+        crowdsec_install();
+        ]]>
     </custom_php_install_command>
 
     <custom_php_resync_config_command>
         <![CDATA[
-		crowdsec_resync_config();
-		]]>
+        crowdsec_resync_config();
+        ]]>
     </custom_php_resync_config_command>
 
     <custom_php_validation_command>
@@ -328,8 +328,8 @@
 
     <custom_php_pre_deinstall_command>
         <![CDATA[
-		crowdsec_deinstall();
-		]]>
+        crowdsec_deinstall();
+        ]]>
     </custom_php_pre_deinstall_command>
 
     <filter_rules_needed><![CDATA[crowdsec_generate_rules]]></filter_rules_needed>
@@ -337,15 +337,4 @@
     <custom_php_after_form_command>crowdsec_after_form();</custom_php_after_form_command>
 
     <custom_php_after_head_command><![CDATA[crowdsec_after_head();]]></custom_php_after_head_command>
-
-    <!--
-    <custom_add_php_command></custom_add_php_command>
-    <custom_add_php_command_late></custom_add_php_command_late>
-    <custom_php_global_functions></custom_php_global_functions>
-    <custom_php_deinstall_command></custom_php_deinstall_command>
-    <custom_delete_php_command></custom_delete_php_command>
-    <start_command></start_command>
-    <custom_php_service_status_command></custom_php_service_status_command>
-    <custom_php_command_before_form></custom_php_command_before_form>
-    -->
 </packagegui>
