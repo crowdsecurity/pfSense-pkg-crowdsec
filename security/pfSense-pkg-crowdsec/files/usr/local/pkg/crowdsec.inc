@@ -24,6 +24,7 @@ require_once("config.lib.inc");
 require_once("filter.inc");
 require_once("interfaces.inc");
 require_once("util.inc");
+require_once("guiconfig.inc");
 require_once("/usr/local/pkg/crowdsec/vendor/autoload.php");
 
 use Symfony\Component\Yaml\Yaml;
