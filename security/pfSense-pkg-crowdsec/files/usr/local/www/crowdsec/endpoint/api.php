@@ -43,7 +43,7 @@ if ($method === 'DELETE' && isset($_GET['action']) && isset($_GET['decision_id']
 
     switch ($action) {
         case 'status-alerts-list':
-            echo shell_exec("/usr/local/bin/cscli alerts list -l 0 -o json | sed 's/^null$/\[\]/'");
+            echo shell_exec("/usr/local/bin/cscli alerts list -l 0 -o json");
             break;
         case 'status-bouncers-list':
             echo shell_exec("/usr/local/bin/cscli bouncers list -o json");
@@ -52,7 +52,7 @@ if ($method === 'DELETE' && isset($_GET['action']) && isset($_GET['decision_id']
             echo shell_exec("/usr/local/bin/cscli collections list -o json");
             break;
         case 'status-decisions-list':
-            echo shell_exec("/usr/local/bin/cscli decisions list -l 0 -o json | sed 's/^null$/\[\]/'");
+            echo shell_exec("/usr/local/bin/cscli decisions list -l 0 -o json");
             break;
         case 'status-machines-list':
             echo shell_exec("/usr/local/bin/cscli machines list -o json");
