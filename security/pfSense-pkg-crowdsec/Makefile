@@ -39,9 +39,9 @@ do-install:
 	${MKDIR} ${STAGEDIR}${PREFIX}/etc/crowdsec/acquis.d/
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/crowdsec.xml \
 		${STAGEDIR}${PREFIX}/pkg
-	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/landing.php \
+	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/howto.php \
     		${STAGEDIR}${PREFIX}/www/crowdsec
-	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/landing.html \
+	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/howto.html \
     		${STAGEDIR}${PREFIX}/www/crowdsec
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/www/crowdsec/status.php \
 			${STAGEDIR}${PREFIX}/www/crowdsec

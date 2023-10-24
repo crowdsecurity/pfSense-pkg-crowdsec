@@ -1,6 +1,6 @@
 <?php
 /*
- * crowdsec/landing.php
+ * crowdsec/howto.php
  *
  * Copyright (c) 2020-2023 Crowdsec
  * All rights reserved.
@@ -30,6 +30,6 @@ $shortcut_section = "crowdsec";
 
 include("head.inc");
 
-require("./landing.html");
+require("./howto.html");
 
 include("foot.inc");

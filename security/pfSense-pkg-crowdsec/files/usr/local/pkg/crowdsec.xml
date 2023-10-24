@@ -65,7 +65,7 @@
         </tab>
         <tab>
             <text>Documentation</text>
-            <url>/crowdsec/landing.php</url>
+            <url>/crowdsec/howto.php</url>
         </tab>
     </tabs>
     <fields>
@@ -78,7 +78,7 @@
             <fieldname>just_info</fieldname>
             <type>info</type>
             <description> <![CDATA[
-		Please follow <a href="/crowdsec/landing.php">this documentation</a> before taking any action.
+		Please follow <a href="/crowdsec/howto.php">this documentation</a> before taking any action.
 		]]></description>
         </field>
 
