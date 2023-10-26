@@ -64,11 +64,11 @@
             <type>listtopic</type>
         </field>
         <field>
-            <fielddescr>Warning</fielddescr>
+            <fielddescr>IMPORTANT</fielddescr>
             <fieldname>doc_info</fieldname>
             <type>info</type>
             <description><![CDATA[
-                It is recommended that you read the <a href="https://docs.crowdsec.net/docs/next/getting_started/install_crowdsec_pfsense">documentation</a> before taking any action.
+                It is recommended that you <a href="https://docs.crowdsec.net/docs/next/getting_started/install_crowdsec_pfsense">read the documentation</a> before taking any action.
 		]]></description>
         </field>
 
