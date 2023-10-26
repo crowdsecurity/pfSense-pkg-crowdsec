@@ -75,28 +75,11 @@
         </field>
         <field>
             <fielddescr>Warning</fielddescr>
-            <fieldname>just_info</fieldname>
+            <fieldname>doc_info</fieldname>
             <type>info</type>
-            <description> <![CDATA[
-		Please follow <a href="/crowdsec/howto.php">this documentation</a> before taking any action.
+            <description><![CDATA[
+                It is recommended that you read the <a href="https://docs.crowdsec.net/docs/next/getting_started/install_crowdsec_opnsense">documentation</a> before taking any action.
 		]]></description>
-        </field>
-
-        <field>
-            <name>Log processor (CrowdSec agent)</name>
-            <type>listtopic</type>
-        </field>
-        <field>
-            <fielddescr>Enable</fielddescr>
-            <fieldname>enable_agent</fieldname>
-            <type>checkbox</type>
-            <default_value>on</default_value>
-        </field>
-        <field>
-            <fielddescr></fielddescr>
-            <fieldname>agent_info</fieldname>
-            <type>info</type>
-            <description>Read logs from pfSense and its packages to detect threats. Recommended.</description>
         </field>
 
         <field>
@@ -114,6 +97,23 @@
             <fieldname>firewall_info</fieldname>
             <type>info</type>
             <description>Feed the blocklists to the pfSense firewall. Recommended.</description>
+        </field>
+
+        <field>
+            <name>Log processor (CrowdSec agent)</name>
+            <type>listtopic</type>
+        </field>
+        <field>
+            <fielddescr>Enable</fielddescr>
+            <fieldname>enable_agent</fieldname>
+            <type>checkbox</type>
+            <default_value>on</default_value>
+        </field>
+        <field>
+            <fielddescr></fielddescr>
+            <fieldname>agent_info</fieldname>
+            <type>info</type>
+            <description>Read logs from pfSense and its packages to detect threats. Recommended.</description>
         </field>
 
         <field>
