@@ -24,7 +24,6 @@ require_once("config.lib.inc");
 require_once("filter.inc");
 require_once("interfaces.inc");
 require_once("util.inc");
-require_once("guiconfig.inc");
 require_once("/usr/local/pkg/crowdsec/vendor/autoload.php");
 
 use Symfony\Component\Yaml\Yaml;
@@ -407,20 +406,9 @@ function crowdsec_resync_config()
                     if (!empty($crowdsec_conf)) {
                         set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
                         shell_exec("cscli hub update");
-                        exec("cscli --error collections install crowdsecurity/pfsense 2>&1", $output);
+                        shell_exec("cscli --error collections install crowdsecurity/pfsense");
                         // We assume reloading won't fail
                         shell_exec("service crowdsec reload");
-
-                        if (!empty($output)) {
-                            $flash_danger = 'warning';
-                            $flash_message .= 'pfsense collection installation failed:  ' .
-                                               htmlspecialchars($output[0]) . PHP_EOL;
-
-                            $flash_message .= 'Please run <b><i>cscli collections install crowdsecurity/pfsense</i></b> and <b><i>service crowdsec reload</i></b>.'
-                                               . PHP_EOL;
-                        } else {
-                            $flash_message .= 'Installed collection crowdsecurity/pfsense.' . PHP_EOL;
-                        }
                     }
                 }
             }
@@ -440,7 +428,11 @@ function crowdsec_resync_config()
                            PHP_EOL;
     }
 
-    set_flash_message($flash_class, $flash_message);
+    if ($_POST) {
+	@phpsession_begin();
+	$_SESSION['flash_messages'][$class][] = $msg;
+	@phpsession_end(true);
+    }
 }
 
 /**
