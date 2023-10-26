@@ -25,4 +25,4 @@ $shortcuts['crowdsec']				= [];
 $shortcuts['crowdsec']['main']		= '/pkg_edit.php?xml=crowdsec.xml';
 $shortcuts['crowdsec']['log']           = '/status_logs_packages.php?pkg=crowdsec';
 $shortcuts['crowdsec']['status']        = '/crowdsec/status.php';
-$shortcuts['crowdsec']['service']       = 'crowdsec';
+// No service shortcut because there are two, crowdsec and crowdsec_firewall; it would be confusing
