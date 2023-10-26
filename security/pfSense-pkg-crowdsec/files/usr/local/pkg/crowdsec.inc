@@ -421,7 +421,7 @@ function crowdsec_resync_config()
 
     if (config_path_enabled('system', 'use_mfs_tmpvar')) {
         $flash_class = 'danger';
-        $flash_message .= " pfSense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can modify this settings <a href='/system_advanced_misc.php'>in this page.</a";
+        $flash_message .= " pfSense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can configure CrowdSec to use a remote LAPI or disable the RAM disk <a href='/system_advanced_misc.php'>in this page</a>.";
     }
 
     if ($_POST) {
