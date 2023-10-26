@@ -390,21 +390,18 @@ function crowdsec_resync_config()
 
     // Check service statuses and notify user
     $flash_class = 'success';
-    $flash_message = 'Settings saved';
-    $flash_message .= $_POST ? '.' . PHP_EOL : ' during package installation.' . PHP_EOL;
+    $flash_message = 'Settings saved.';
     if ($should_use_crowdsec || $should_use_firewall) {
         sleep(2);
         // Handle crowdsec service
         if ($should_use_crowdsec) {
             if (!is_cs_service_running('crowdsec')) {
                 $flash_class = 'warning';
-                $flash_message .= 'Crowdsec service is not running. Please check logs.' . PHP_EOL;
+                $flash_message .= ' Crowdsec service is not running. Please check /var/log/crowdsec/crowdsec.log.';
             } else {
                 // Handle pfsense collection
                 if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
-                    $crowdsec_conf = get_yaml_content(CROWDSEC_CONF);
                     if (!empty($crowdsec_conf)) {
-                        set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
                         shell_exec("cscli hub update");
                         shell_exec("cscli --error collections install crowdsecurity/pfsense");
                         // We assume reloading won't fail
@@ -417,20 +414,19 @@ function crowdsec_resync_config()
         if ($should_use_firewall) {
             if (!is_cs_service_running('crowdsec_firewall')) {
                 $flash_class = 'warning';
-                $flash_message .= 'Crowdsec firewall bouncer is not running. Please check logs.' . PHP_EOL;
+                $flash_message .= ' Crowdsec firewall is not running. Please check /var/log/crowdsec/crowdsec-firewall-bouncer.log.';
             }
         }
     }
 
     if (config_path_enabled('system', 'use_mfs_tmpvar')) {
-        $flash_danger = 'warning';
-        $flash_message .= "pfsense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can modify this settings <a href='/system_advanced_misc.php'>in this page.</a" .
-                           PHP_EOL;
+        $flash_class = 'danger';
+        $flash_message .= " pfSense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can modify this settings <a href='/system_advanced_misc.php'>in this page.</a";
     }
 
     if ($_POST) {
 	@phpsession_begin();
-	$_SESSION['flash_messages'][$class][] = $msg;
+	$_SESSION['flash_messages'][$flash_class][] = $flash_message;
 	@phpsession_end(true);
     }
 }
