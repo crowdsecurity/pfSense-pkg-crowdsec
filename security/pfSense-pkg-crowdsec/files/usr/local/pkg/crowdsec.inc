@@ -425,6 +425,8 @@ function crowdsec_resync_config()
     }
 
     if ($_POST) {
+        // we only flash the message if we are responding to a POST request
+        // otherwise we are in post-install and can't do that
 	@phpsession_begin();
 	$_SESSION['flash_messages'][$flash_class][] = $flash_message;
 	@phpsession_end(true);
