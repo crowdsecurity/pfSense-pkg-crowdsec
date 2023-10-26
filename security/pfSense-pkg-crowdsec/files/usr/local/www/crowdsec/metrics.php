@@ -24,8 +24,8 @@ require_once("globals.inc");
 
 $g['disablehelpicon'] = true;
 
-$pgtitle = array(gettext("Diagnostics"), gettext("CrowdSec"), gettext("Metrics"));
-$pglinks = ['@self', '@self', '@self'];
+$pgtitle = array(gettext("Diagnostics"), gettext("CrowdSec Metrics"));
+$pglinks = ['', '@self'];
 $shortcut_section = "crowdsec";
 
 include("head.inc");
