@@ -24,12 +24,13 @@
  */
 	]]>
     </copyright>
-    <name>CrowdSec</name>
-    <title>Services/CrowdSec</title>
+    <name>crowdsec</name>
+    <title>Services: CrowdSec</title>
     <include_file>/usr/local/pkg/crowdsec.inc</include_file>
     <menu>
         <name>CrowdSec</name>
         <section>Services</section>
+        <configfile>crowdsec.xml</configfile>
         <url>/pkg_edit.php?xml=crowdsec.xml</url>
     </menu>
     <menu>
@@ -85,7 +86,7 @@
             <fielddescr></fielddescr>
             <fieldname>firewall_info</fieldname>
             <type>info</type>
-            <description>Feed the blocklists to the pfSense firewall. Recommended.</description>
+            <description>Feed the blocklists to the pfSense firewall. Always required, even if you use your own firewall rules.</description>
         </field>
 
         <field>
@@ -233,7 +234,7 @@
             <fielddescr></fielddescr>
             <fieldname>rules_info</fieldname>
             <type>info</type>
-            <description><![CDATA[Rules will be hidden in the pfSense UI.]]></description>
+            <description><![CDATA[Rules will be hidden in the pfSense UI. If you have special needs, you can disable the rules here and provide your own.]]></description>
         </field>
         <field>
             <fielddescr>Apply to all interfaces</fielddescr>
