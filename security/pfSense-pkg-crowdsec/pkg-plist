@@ -10,8 +10,6 @@ etc/crowdsec/feature.yaml
 etc/crowdsec/acquis.d/pfsense.yaml
 %%DATADIR%%/info.xml
 www/shortcuts/crowdsec.inc
-www/crowdsec/howto.php
-www/crowdsec/howto.html
 www/crowdsec/status.php
 www/crowdsec/metrics.php
 www/crowdsec/metrics.html

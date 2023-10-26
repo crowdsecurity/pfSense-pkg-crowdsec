@@ -57,17 +57,6 @@
         <executable>crowdsec-firewall-b</executable>
         <description>Crowdsec Firewall remediation</description>
     </service>
-    <tabs>
-        <tab>
-            <text>Settings</text>
-            <url>/pkg_edit.php?xml=crowdsec.xml</url>
-            <active/>
-        </tab>
-        <tab>
-            <text>Documentation</text>
-            <url>/crowdsec/howto.php</url>
-        </tab>
-    </tabs>
     <fields>
         <field>
             <name>Documentation</name>
