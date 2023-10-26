@@ -33,13 +33,13 @@
         <url>/pkg_edit.php?xml=crowdsec.xml</url>
     </menu>
     <menu>
-        <name>CrowdSec</name>
+        <name>CrowdSec Metrics</name>
         <section>Diagnostics</section>
         <configfile>crowdsec.xml</configfile>
         <url>/crowdsec/metrics.php</url>
     </menu>
     <menu>
-        <name>CrowdSec</name>
+        <name>CrowdSec Status</name>
         <section>Status</section>
         <configfile>crowdsec.xml</configfile>
         <url>/crowdsec/status.php</url>
@@ -67,7 +67,7 @@
             <fieldname>doc_info</fieldname>
             <type>info</type>
             <description><![CDATA[
-                It is recommended that you read the <a href="https://docs.crowdsec.net/docs/next/getting_started/install_crowdsec_opnsense">documentation</a> before taking any action.
+                It is recommended that you read the <a href="https://docs.crowdsec.net/docs/next/getting_started/install_crowdsec_pfsense">documentation</a> before taking any action.
 		]]></description>
         </field>
 
