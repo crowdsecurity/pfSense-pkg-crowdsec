@@ -2,12 +2,15 @@
 # create new files in /usr/local/etc/crowdsec/acquis.d/
 
 filenames:
-  # This should cover crowdsecurity/sshd and firewallservices/pf,
+  # This should cover crowdsecurity/sshd and crowdsecurity/pfsense-gui,
   # and is already defined in acquis.yaml
   # - /var/log/auth.log
 
   # collection: firewallservices/pf
   - /var/log/filter.log
+
+  # collection: crowdsecurity/nginx
+  - /var/log/nginx.log
 
 # If /var/log is in RAM, the log directories are created after crowdsec is run.
 # We force crowdsec to watch over directory creation as well

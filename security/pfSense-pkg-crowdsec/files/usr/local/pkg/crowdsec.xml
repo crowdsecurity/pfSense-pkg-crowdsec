@@ -7,7 +7,8 @@
 /*
  * crowdsec.xml
  *
- * Copyright (c) 2020-2023 Crowdsec
+ * part of pfSense (https://www.pfSense.org/)
+ * Copyright (c) 2023 CrowdSec
  * All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,12 +25,13 @@
  */
 	]]>
     </copyright>
-    <name>CrowdSec</name>
-    <title>Services/CrowdSec</title>
+    <name>crowdsec</name>
+    <title>Services: CrowdSec</title>
     <include_file>/usr/local/pkg/crowdsec.inc</include_file>
     <menu>
         <name>CrowdSec</name>
         <section>Services</section>
+        <configfile>crowdsec.xml</configfile>
         <url>/pkg_edit.php?xml=crowdsec.xml</url>
     </menu>
     <menu>
@@ -57,29 +59,35 @@
         <executable>crowdsec-firewall-b</executable>
         <description>Crowdsec Firewall remediation</description>
     </service>
-    <tabs>
-        <tab>
-            <text>Settings</text>
-            <url>/pkg_edit.php?xml=crowdsec.xml</url>
-            <active/>
-        </tab>
-        <tab>
-            <text>Documentation</text>
-            <url>/crowdsec/landing.php</url>
-        </tab>
-    </tabs>
     <fields>
         <field>
             <name>Documentation</name>
             <type>listtopic</type>
         </field>
         <field>
-            <fielddescr>Warning</fielddescr>
-            <fieldname>just_info</fieldname>
+            <fielddescr>IMPORTANT</fielddescr>
+            <fieldname>doc_info</fieldname>
             <type>info</type>
-            <description> <![CDATA[
-		Please follow <a href="/crowdsec/landing.php">this documentation</a> before taking any action.
+            <description><![CDATA[
+                It is recommended that you <a href="https://docs.crowdsec.net/docs/next/getting_started/install_crowdsec_pfsense">read the documentation</a> before taking any action.
 		]]></description>
+        </field>
+
+        <field>
+            <name>Remediation component (firewall bouncer)</name>
+            <type>listtopic</type>
+        </field>
+        <field>
+            <fielddescr>Enable</fielddescr>
+            <fieldname>enable_fw_bouncer</fieldname>
+            <type>checkbox</type>
+            <default_value>on</default_value>
+        </field>
+        <field>
+            <fielddescr></fielddescr>
+            <fieldname>firewall_info</fieldname>
+            <type>info</type>
+            <description>Feed the blocklists to the pfSense firewall. Always required, even if you use your own firewall rules.</description>
         </field>
 
         <field>
@@ -97,23 +105,6 @@
             <fieldname>agent_info</fieldname>
             <type>info</type>
             <description>Read logs from pfSense and its packages to detect threats. Recommended.</description>
-        </field>
-
-        <field>
-            <name>Remediation component (firewall bouncer)</name>
-            <type>listtopic</type>
-        </field>
-        <field>
-            <fielddescr>Enable</fielddescr>
-            <fieldname>enable_fw_bouncer</fieldname>
-            <type>checkbox</type>
-            <default_value>on</default_value>
-        </field>
-        <field>
-            <fielddescr></fielddescr>
-            <fieldname>firewall_info</fieldname>
-            <type>info</type>
-            <description>Feed the blocklists to the pfSense firewall. Recommended.</description>
         </field>
 
         <field>
@@ -244,7 +235,7 @@
             <fielddescr></fielddescr>
             <fieldname>rules_info</fieldname>
             <type>info</type>
-            <description><![CDATA[Rules will be hidden in the pfSense UI.]]></description>
+            <description><![CDATA[Rules will be hidden in the pfSense UI. If you have special needs, you can disable the rules here and provide your own.]]></description>
         </field>
         <field>
             <fielddescr>Apply to all interfaces</fielddescr>
@@ -310,14 +301,14 @@
 
     <custom_php_install_command>
         <![CDATA[
-		crowdsec_install();
-		]]>
+        crowdsec_install();
+        ]]>
     </custom_php_install_command>
 
     <custom_php_resync_config_command>
         <![CDATA[
-		crowdsec_resync_config();
-		]]>
+        crowdsec_resync_config();
+        ]]>
     </custom_php_resync_config_command>
 
     <custom_php_validation_command>
@@ -328,24 +319,11 @@
 
     <custom_php_pre_deinstall_command>
         <![CDATA[
-		crowdsec_deinstall();
-		]]>
+        crowdsec_deinstall();
+        ]]>
     </custom_php_pre_deinstall_command>
 
     <filter_rules_needed><![CDATA[crowdsec_generate_rules]]></filter_rules_needed>
 
     <custom_php_after_form_command>crowdsec_after_form();</custom_php_after_form_command>
-
-    <custom_php_after_head_command><![CDATA[crowdsec_after_head();]]></custom_php_after_head_command>
-
-    <!--
-    <custom_add_php_command></custom_add_php_command>
-    <custom_add_php_command_late></custom_add_php_command_late>
-    <custom_php_global_functions></custom_php_global_functions>
-    <custom_php_deinstall_command></custom_php_deinstall_command>
-    <custom_delete_php_command></custom_delete_php_command>
-    <start_command></start_command>
-    <custom_php_service_status_command></custom_php_service_status_command>
-    <custom_php_command_before_form></custom_php_command_before_form>
-    -->
 </packagegui>

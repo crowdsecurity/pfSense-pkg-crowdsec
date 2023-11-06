@@ -2,7 +2,8 @@
 /*
  * crowdsec.inc
  *
- * Copyright (c) 2020-2023 Crowdsec
+ * part of pfSense (https://www.pfSense.org/)
+ * Copyright (c) 2023 CrowdSec
  * All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +34,6 @@ use Symfony\Component\Yaml\Exception\DumpException;
 define('CROWDSEC_LAPI_CREDENTIALS', '/usr/local/etc/crowdsec/local_api_credentials.yaml');
 define('CROWDSEC_CONF', '/usr/local/etc/crowdsec/config.yaml');
 define('CROWDSEC_FIREWALL_CONF', '/usr/local/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml');
-define('CROWDSEC_SETTINGS_NOTICE', '/usr/local/www/crowdsec/settings-notice.txt');
 define('CROWDSEC_PFSENSE_COLLECTION', '/usr/local/etc/crowdsec/collections/pfsense.yaml');
 
 $g['disablehelpicon'] = true;
@@ -281,6 +281,10 @@ function crowdsec_resync_config()
     $crowdsec_conf_orig = $crowdsec_conf;
     $fw_conf = get_yaml_content(CROWDSEC_FIREWALL_CONF);
     $fw_conf_orig = $fw_conf;
+
+    // end of beta, use mainstream branch
+    unset($crowdsec_conf['cscli']['hub_branch']);
+
     // Handle LAPI ON
     if (!empty($cf['enable_lapi'])) {
         $should_use_crowdsec = true;
@@ -386,35 +390,23 @@ function crowdsec_resync_config()
     mwexec('service crowdsec_firewall.sh restart');
 
     // Check service statuses and notify user
-    $notice_content = 'Settings saved';
-    $notice_content .= $_POST ? '.' . PHP_EOL : ' during package installation.' . PHP_EOL;
+    $flash_class = 'success';
+    $flash_message = 'Settings saved.';
     if ($should_use_crowdsec || $should_use_firewall) {
         sleep(2);
         // Handle crowdsec service
         if ($should_use_crowdsec) {
             if (!is_cs_service_running('crowdsec')) {
-                $notice_content .= 'Crowdsec service is not running. Please check logs.' . PHP_EOL;
+                $flash_class = 'warning';
+                $flash_message .= ' Crowdsec service is not running. Please check /var/log/crowdsec/crowdsec.log.';
             } else {
                 // Handle pfsense collection
                 if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
-                    $crowdsec_conf = get_yaml_content(CROWDSEC_CONF);
                     if (!empty($crowdsec_conf)) {
-                        $crowdsec_conf['cscli']['hub_branch'] = "pfsense-gui";
-                        set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
                         shell_exec("cscli hub update");
-                        exec("cscli --error collections install crowdsecurity/pfsense 2>&1", $output);
+                        shell_exec("cscli --error collections install crowdsecurity/pfsense");
                         // We assume reloading won't fail
                         shell_exec("service crowdsec reload");
-
-                        if (!empty($output)) {
-                            $notice_content .= 'pfsense collection installation failed:  ' .
-                                               htmlspecialchars($output[0]) . PHP_EOL;
-
-                            $notice_content .= 'Please run <b><i>cscli collections install crowdsecurity/pfsense</i></b> and <b><i>service crowdsec reload</i></b>.'
-                                               . PHP_EOL;
-                        } else {
-                            $notice_content .= 'Installed collection crowdsecurity/pfsense.' . PHP_EOL;
-                        }
                     }
                 }
             }
@@ -422,31 +414,24 @@ function crowdsec_resync_config()
         // Handle firewall bouncer
         if ($should_use_firewall) {
             if (!is_cs_service_running('crowdsec_firewall')) {
-                $notice_content .= 'Crowdsec firewall bouncer is not running. Please check logs.' . PHP_EOL;
+                $flash_class = 'warning';
+                $flash_message .= ' Crowdsec firewall is not running. Please check /var/log/crowdsec/crowdsec-firewall-bouncer.log.';
             }
         }
     }
 
     if (config_path_enabled('system', 'use_mfs_tmpvar')) {
-        $notice_content .= "pfsense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can modify this settings <a href='/system_advanced_misc.php'>in this page.</a" .
-                           PHP_EOL;
+        $flash_class = 'danger';
+        $flash_message .= " pfSense is set up to use a RAM disk for /var, the LAPI cannot be used because its database would be lost at every reboot. You can configure CrowdSec to use a remote LAPI or disable the RAM disk <a href='/system_advanced_misc.php'>in this page</a>.";
     }
 
-    file_put_contents(CROWDSEC_SETTINGS_NOTICE, $notice_content);
-}
-
-/**
- * custom_php_after_head_command hook (setting edition after head)
- *
- * @return void
- */
-function crowdsec_after_head()
-{
-    $content = <<<EOF
-    <div id="crowdsec-notice" class="alert alert-success" style="display:none;"></div>
-EOF;
-
-    echo $content;
+    if ($_POST) {
+        // we only flash the message if we are responding to a POST request
+        // otherwise we are in post-install and can't do that
+	@phpsession_begin();
+	$_SESSION['flash_messages'][$flash_class][] = $flash_message;
+	@phpsession_end(true);
+    }
 }
 
 /**
@@ -456,19 +441,6 @@ EOF;
  */
 function crowdsec_after_form()
 {
-    $notice_content = '';
-    if (file_exists(CROWDSEC_SETTINGS_NOTICE)) {
-        $file_content = '';
-        $fh = fopen(CROWDSEC_SETTINGS_NOTICE, 'r');
-        while ($line = fgets($fh)) {
-            $file_content .= '<p>' . trim($line) . '</p>';
-        }
-        fclose($fh);
-
-        $notice_content = "$('#crowdsec-notice').show().html('$file_content');";
-        unlink(CROWDSEC_SETTINGS_NOTICE);
-    }
-
     $content = <<<EOF
 <script type="text/javascript">
 //<![CDATA[
@@ -500,8 +472,6 @@ function crowdsec_after_form()
     }
     
     events.push(function() {
-        $notice_content
-        
         $('input[name="enable_lapi"]').on( "change", function() {
             if( $(this).prop('checked') == true ){
              disableRemote();

@@ -2,7 +2,8 @@
 /*
  * crowdsec/status.php
  *
- * Copyright (c) 2020-2023 Crowdsec
+ * part of pfSense (https://www.pfSense.org/)
+ * Copyright (c) 2023 CrowdSec
  * All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +26,7 @@ require_once("globals.inc");
 $g['disablehelpicon'] = true;
 
 $pgtitle = array(gettext("Status"), gettext("CrowdSec"));
-$pglinks = ['@self', '@self', '@self'];
+$pglinks = ['', '@self'];
 $shortcut_section = "crowdsec";
 
 include("head.inc");
@@ -118,7 +119,7 @@ $content = <<<EOT
     });
     </script>
 <div id="services">
-  <a href="/status_services.php">Service status</a>: security engine <span id="crowdsec-status"><i class="fa fa-spinner fa-spin"></i></span> - firewall remediation <span id="crowdsec-firewall-status"><i class="fa fa-spinner fa-spin"></i></span>
+  <a href="/status_services.php">Running services</a>: security engine <span id="crowdsec-status"><i class="fa fa-spinner fa-spin"></i></span> - firewall remediation <span id="crowdsec-firewall-status"><i class="fa fa-spinner fa-spin"></i></span>
 </div>
 <div id="tabs" style="display:none;">
   <ul>

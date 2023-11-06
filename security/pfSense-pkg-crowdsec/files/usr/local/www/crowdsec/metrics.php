@@ -2,7 +2,8 @@
 /*
  * crowdsec/status.php
  *
- * Copyright (c) 2020-2023 Crowdsec
+ * part of pfSense (https://www.pfSense.org/)
+ * Copyright (c) 2023 CrowdSec
  * All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,8 +25,8 @@ require_once("globals.inc");
 
 $g['disablehelpicon'] = true;
 
-$pgtitle = array(gettext("Diagnostics"), gettext("CrowdSec"), gettext("Metrics"));
-$pglinks = ['@self', '@self', '@self'];
+$pgtitle = array(gettext("Diagnostics"), gettext("CrowdSec Metrics"));
+$pglinks = ['', '@self'];
 $shortcut_section = "crowdsec";
 
 include("head.inc");

@@ -2,8 +2,8 @@
 /*
  * crowdsec.inc
  *
- * 
- * Copyright (c) 2022-2023 Rubicon Communications, LLC (Netgate)
+ * part of pfSense (https://www.pfSense.org/)
+ * Copyright (c) 2023 CrowdSec
  * All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,3 +23,6 @@ global $shortcuts;
 
 $shortcuts['crowdsec']				= [];
 $shortcuts['crowdsec']['main']		= '/pkg_edit.php?xml=crowdsec.xml';
+$shortcuts['crowdsec']['log']           = '/status_logs_packages.php?pkg=crowdsec';
+$shortcuts['crowdsec']['status']        = '/crowdsec/status.php';
+// No service shortcut because there are two, crowdsec and crowdsec_firewall; it would be confusing
