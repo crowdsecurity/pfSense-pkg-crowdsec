@@ -56,6 +56,35 @@ border: 1px solid #000000;
 padding: 10px 10px 0px 10px;
 }
 
+
+/* Style the hub-dropdown ul */
+#hub-dropdown {
+    position: absolute; /* Position it absolutely relative to the parent li */
+    top: 100%; /* Position it below the parent li */
+    left: 0; /* Align it with the left edge of the parent li */
+    background-color: #fff; /* Background color for the submenu */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Add a shadow for depth */
+    display: none; /* Initially hide the submenu */
+    z-index: 1; /* Ensure the submenu appears on top of other elements */
+}
+
+/* Style the individual submenu items */
+#hub-dropdown li {
+    padding: 10px; /* Add padding for spacing */
+    border-bottom: 1px solid #ddd; /* Add a separator between items */
+}
+
+/* Style the hover effect for the parent li */
+#hub-dropdown-parent:hover #hub-dropdown {
+    display: block; /* Show the submenu when the parent li is hovered */
+}
+
+.hub {
+    display: none;
+}
+
+
+
 </style>
 EOT;
 
@@ -125,93 +154,32 @@ $content = <<<EOT
   <ul>
     $machinesLi
     $bouncersLi
-    <li><a href="#tab-status-collections">Collections</a></li>
-    <li><a href="#tab-status-scenarios">Scenarios</a></li>
-    <li><a href="#tab-status-parsers">Parsers</a></li>
-    <li><a href="#tab-status-postoverflows">Postoverflows</a></li>
     <li><a href="#tab-status-alerts">Alerts</a></li>
     <li><a href="#tab-status-decisions">Decisions</a></li>
+    <li id="hub-dropdown-parent">
+        <a href="#hub-tabs">Hub <i class="fa fa-caret-down"></i></a>
+        <ul id="hub-dropdown">
+            <li data-tab="tab-status-collections">Collections</li>
+            <li data-tab="tab-status-scenarios">Scenarios</li>
+            <li data-tab="tab-status-parsers">Parsers</li>
+            <li data-tab="tab-status-postoverflows">Postoverflows</li>
+            <li data-tab="appsec-configs">appsec-configs</li>
+            <li data-tab="appsec-ruless">appsec-rules</li>
+            <li data-tab="contexts">contexts</li>
+        </ul>
+    </li>
+    <li class="hub"><a href="#tab-status-collections">Collections</a></li>
+    <li class="hub"><a href="#tab-status-scenarios">Scenarios</a></li>
+    <li class="hub"><a href="#tab-status-parsers">Parsers</a></li>
+    <li class="hub"><a href="#tab-status-postoverflows">Postoverflows</a></li>
+    <li class="hub"><a href="#appsec-configs">appsec-configs</a></li>
+    <li class="hub"><a href="#appsec-rules">appsec-rules</a></li>
+    <li class="hub"><a href="#contexts">contexts</a></li>
   </ul>
   <div class="loading"><i class="fa fa-spinner fa-spin"></i>Loading, please wait..</div>
   $machinesTab
   $bouncersTab
-  <div id="tab-status-collections">
-    <table id="table-status-collections" class="table table-condensed table-hover table-striped crowdsecTable">
-        <thead>
-            <tr>
-              <th data-column-id="name" data-order="asc">Name</th>
-              <th data-column-id="status">Status</th>
-              <th data-column-id="local_version">Version</th>
-              <th data-visible="false" data-column-id="local_path">Path</th>
-              <th data-column-id="description">Description</th>
-            </tr>
-        </thead>
-        <tbody>
-            </tbody>
-        <tfoot>
-            <tr>
-            </tr>
-        </tfoot>
-    </table>
-  </div>
-  <div id="tab-status-scenarios">
-     <table id="table-status-scenarios" class="table table-condensed table-hover table-striped crowdsecTable">
-        <thead>
-            <tr>
-              <th data-column-id="name" data-order="asc">Name</th>
-              <th data-column-id="status">Status</th>
-              <th data-column-id="local_version">Version</th>
-              <th data-visible="false" data-column-id="local_path">Path</th>
-              <th data-column-id="description">Description</th>
-            </tr>
-        </thead>
-        <tbody>
-            </tbody>
-        <tfoot>
-            <tr>
-            </tr>
-        </tfoot>
-    </table>
-  </div>
-  <div id="tab-status-parsers">
-      <table id="table-status-parsers" class="table table-condensed table-hover table-striped crowdsecTable">
-        <thead>
-            <tr>
-              <th data-column-id="name" data-order="asc">Name</th>
-              <th data-column-id="status">Status</th>
-              <th data-column-id="local_version">Version</th>
-              <th data-visible="false" data-column-id="local_path">Path</th>
-              <th data-column-id="description">Description</th>
-            </tr>
-        </thead>
-        <tbody>
-            </tbody>
-        <tfoot>
-            <tr>
-            </tr>
-        </tfoot>
-    </table>
-  </div>
-  <div id="tab-status-postoverflows">
-      <table id="table-status-postoverflows" class="table table-condensed table-hover table-striped crowdsecTable">
-            <thead>
-                <tr>
-                  <th data-column-id="name" data-order="asc">Name</th>
-                  <th data-column-id="status">Status</th>
-                  <th data-column-id="local_version">Version</th>
-                  <th data-visible="false" data-column-id="local_path">Path</th>
-                  <th data-column-id="description">Description</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-            <tfoot>
-                <tr>
-                </tr>
-            </tfoot>
-        </table>
-  </div>
-  <div id="tab-status-alerts">
+   <div id="tab-status-alerts">
     <table id="table-status-alerts" class="table table-condensed table-hover table-striped crowdsecTable">
         <thead>
             <tr>
@@ -263,6 +231,84 @@ $content = <<<EOT
             </tfoot>
         </table>
   </div>
+  <div id="tab-status-collections">
+        <table id="table-status-collections" class="table table-condensed table-hover table-striped crowdsecTable">
+            <thead>
+                <tr>
+                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="status">Status</th>
+                  <th data-column-id="local_version">Version</th>
+                  <th data-visible="false" data-column-id="local_path">Path</th>
+                  <th data-column-id="description">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+            <tfoot>
+                <tr>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div id="tab-status-scenarios">
+        <table id="table-status-scenarios" class="table table-condensed table-hover table-striped crowdsecTable">
+            <thead>
+                <tr>
+                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="status">Status</th>
+                  <th data-column-id="local_version">Version</th>
+                  <th data-visible="false" data-column-id="local_path">Path</th>
+                  <th data-column-id="description">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+            <tfoot>
+                <tr>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div id="tab-status-parsers">
+        <table id="table-status-parsers" class="table table-condensed table-hover table-striped crowdsecTable">
+            <thead>
+                <tr>
+                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="status">Status</th>
+                  <th data-column-id="local_version">Version</th>
+                  <th data-visible="false" data-column-id="local_path">Path</th>
+                  <th data-column-id="description">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+            <tfoot>
+                <tr>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div id="tab-status-postoverflows">
+      <table id="table-status-postoverflows" class="table table-condensed table-hover table-striped crowdsecTable">
+            <thead>
+                <tr>
+                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="status">Status</th>
+                  <th data-column-id="local_version">Version</th>
+                  <th data-visible="false" data-column-id="local_path">Path</th>
+                  <th data-column-id="description">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+            <tfoot>
+                <tr>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div id="hub-tabs">
+    </div>
 </div>
 <!-- Modal popup to confirm decision deletion -->
 <div class="modal fade" id="remove-decision-modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" 

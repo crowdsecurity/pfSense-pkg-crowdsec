@@ -73,7 +73,7 @@ const CrowdSec = (function () {
         return ret;
     }
 
-    function _updateFreshness (selector, timestamp) {
+    function _updateFreshness(selector, timestamp) {
         var $freshness = $(selector).find('.actionBar .freshness');
         if (timestamp) {
             $freshness.data('refresh_timestamp', timestamp);
@@ -88,7 +88,7 @@ const CrowdSec = (function () {
         $freshness.text(howlongHuman + ' ago');
     }
 
-    function _addFreshness (selector) {
+    function _addFreshness(selector) {
         // this creates one timer per tab
         var freshnessTemplate = '<span style="float:left;"><i>Last refresh: <span class="freshness"></span></i></span>';
         $(selector).find('.actionBar').prepend(freshnessTemplate);
@@ -97,24 +97,24 @@ const CrowdSec = (function () {
         }, 5000);
     }
 
-    function _refreshTab (selector, action, dataCallback) {
+    function _refreshTab(selector, action, dataCallback) {
         $('.loading').show();
         $.ajax({
             url: api_url,
             cache: false,
             dataType: 'json',
-            data: {action: action},
+            data: { action: action },
             type: 'POST',
             method: 'POST',
             success: dataCallback,
-            complete: function() {
-                $( ".loading" ).hide();
+            complete: function () {
+                $(".loading").hide();
                 _updateFreshness(selector, moment());
             }
         })
     }
 
-    function _parseDuration (duration) {
+    function _parseDuration(duration) {
         var re = /(-?)(?:(?:(\d+)h)?(\d+)m)?(\d+).\d+(m?)s/m;
         var matches = duration.match(re);
         var seconds = 0;
@@ -142,15 +142,15 @@ const CrowdSec = (function () {
         return seconds;
     }
 
-    function _humanizeDate (text) {
+    function _humanizeDate(text) {
         return moment(text).fromNow();
     }
 
-    function _humanizeDuration (text) {
+    function _humanizeDuration(text) {
         return moment.duration(_parseDuration(text), 'seconds').humanize();
     }
 
-    function _yesno2html (val) {
+    function _yesno2html(val) {
         if (val) {
             return '<i class="fa fa-check text-success"></i>';
         } else {
@@ -173,7 +173,7 @@ const CrowdSec = (function () {
             }).insertBefore(tab.find('.actionBar .actions .dropdown:first'));
             _addFreshness(selector);
             _refreshTab(selector, action, dataCallback);
-            if(action.startsWith("metrics")){
+            if (action.startsWith("metrics")) {
                 // Refresh periodically
                 if (metricsInterval) {
                     clearInterval(metricsInterval);
@@ -218,7 +218,7 @@ const CrowdSec = (function () {
                     name: row.name,
                     status: row.status,
                     local_version: row.local_version || ' ',
-                    local_path: row.local_path ? row.local_path.replace(crowdsec_path,'') : ' ',
+                    local_path: row.local_path ? row.local_path.replace(crowdsec_path, '') : ' ',
                     description: row.description || ' '
                 });
             });
@@ -237,7 +237,7 @@ const CrowdSec = (function () {
                     name: row.name,
                     status: row.status,
                     local_version: row.local_version || ' ',
-                    local_path: row.local_path ? row.local_path.replace(crowdsec_path,'') : ' ',
+                    local_path: row.local_path ? row.local_path.replace(crowdsec_path, '') : ' ',
                     description: row.description || ' '
                 });
             });
@@ -256,7 +256,7 @@ const CrowdSec = (function () {
                     name: row.name,
                     status: row.status,
                     local_version: row.local_version || ' ',
-                    local_path: row.local_path ? row.local_path.replace(crowdsec_path,'') : ' ',
+                    local_path: row.local_path ? row.local_path.replace(crowdsec_path, '') : ' ',
                     description: row.description || ' '
                 });
             });
@@ -275,7 +275,7 @@ const CrowdSec = (function () {
                     name: row.name,
                     status: row.status,
                     local_version: row.local_version || ' ',
-                    local_path: row.local_path ? row.local_path.replace(crowdsec_path,'') : ' ',
+                    local_path: row.local_path ? row.local_path.replace(crowdsec_path, '') : ' ',
                     description: row.description || ' '
                 });
             });
@@ -364,10 +364,10 @@ const CrowdSec = (function () {
         const id = "#tab-metrics-acquisition";
         const dataCallback = function (data) {
             const rows = [];
-            if(data.acquisition){
+            if (data.acquisition) {
                 const acquisition = Object.entries(data.acquisition);
                 acquisition.map(function (acquisition) {
-                    if(acquisition.length === 2){
+                    if (acquisition.length === 2) {
                         rows.push({
                             // search will break on empty values when using .append(). so we use spaces
                             source: acquisition[0] || ' ',
@@ -389,16 +389,16 @@ const CrowdSec = (function () {
         const id = "#tab-metrics-decisions";
         const dataCallback = function (data) {
             const rows = [];
-            if(data.decisions){
+            if (data.decisions) {
                 const decisions = Object.entries(data.decisions);
                 decisions.map(function (decision) {
-                    if(decision.length === 2){
+                    if (decision.length === 2) {
                         const origins = Object.entries(decision[1]);
                         origins.map(function (origin) {
-                            if(origin.length === 2){
+                            if (origin.length === 2) {
                                 const types = Object.entries(origin[1]);
                                 types.map(function (type) {
-                                    if(type.length === 2){
+                                    if (type.length === 2) {
                                         rows.push({
                                             // search will break on empty values when using .append(). so we use spaces
                                             reason: decision[0] || ' ',
@@ -423,10 +423,10 @@ const CrowdSec = (function () {
         const id = "#tab-metrics-bucket";
         const dataCallback = function (data) {
             const rows = [];
-            if(data.buckets){
+            if (data.buckets) {
                 const buckets = Object.entries(data.buckets);
                 buckets.map(function (bucket) {
-                    if(bucket.length === 2){
+                    if (bucket.length === 2) {
                         rows.push({
                             bucket: bucket[0] || ' ',
                             current: bucket[1].curr_count || ' ',
@@ -448,10 +448,10 @@ const CrowdSec = (function () {
         const id = "#tab-metrics-parser";
         const dataCallback = function (data) {
             const rows = [];
-            if(data.parsers){
+            if (data.parsers) {
                 const parsers = Object.entries(data.parsers);
                 parsers.map(function (parser) {
-                    if(parser.length === 2){
+                    if (parser.length === 2) {
                         rows.push({
                             parsers: parser[0] || ' ',
                             hits: parser[1].hits || ' ',
@@ -472,7 +472,7 @@ const CrowdSec = (function () {
         const id = "#tab-metrics-alerts";
         const dataCallback = function (data) {
             const rows = [];
-            if(data.alerts) {
+            if (data.alerts) {
                 const alerts = Object.entries(data.alerts);
                 alerts.map(function (alert) {
                     if (alert.length === 2) {
@@ -493,30 +493,30 @@ const CrowdSec = (function () {
         const id = "#tab-metrics-lapi-machines";
         const dataCallback = function (data) {
             const rows = [];
-            if(data.lapi_machine){
+            if (data.lapi_machine) {
                 const machines = Object.entries(data.lapi_machine);
                 machines.map(function (machine) {
-                     if(machine.length === 2){
-                         const routes = Object.entries(machine[1]);
-                         routes.map(function (route) {
-                                const methods = Object.values(route);
-                                if( methods.length === 2 ){
-                                    const methodTypes = Object.entries(methods[1]);
-                                    methodTypes.map(function (type) {
-                                        if (type.length === 2) {
-                                            rows.push({
-                                                machine: machine[0] || ' ',
-                                                route: route[0] || ' ',
-                                                method: type[0],
-                                                hits: type[1]
-                                            });
-                                        }
-                                    });
+                    if (machine.length === 2) {
+                        const routes = Object.entries(machine[1]);
+                        routes.map(function (route) {
+                            const methods = Object.values(route);
+                            if (methods.length === 2) {
+                                const methodTypes = Object.entries(methods[1]);
+                                methodTypes.map(function (type) {
+                                    if (type.length === 2) {
+                                        rows.push({
+                                            machine: machine[0] || ' ',
+                                            route: route[0] || ' ',
+                                            method: type[0],
+                                            hits: type[1]
+                                        });
+                                    }
+                                });
 
-                                }
-                         });
-                     }
-                 });
+                            }
+                        });
+                    }
+                });
             }
 
             $(id + ' table').bootgrid('clear').bootgrid('append', rows);
@@ -529,14 +529,14 @@ const CrowdSec = (function () {
         const id = "#tab-metrics-lapi-bouncers";
         const dataCallback = function (data) {
             const rows = [];
-            if(data.lapi_bouncer){
+            if (data.lapi_bouncer) {
                 const bouncers = Object.entries(data.lapi_bouncer);
                 bouncers.map(function (bouncer) {
-                    if(bouncer.length === 2){
+                    if (bouncer.length === 2) {
                         const routes = Object.entries(bouncer[1]);
                         routes.map(function (route) {
                             const methods = Object.values(route);
-                            if( methods.length === 2 ){
+                            if (methods.length === 2) {
                                 const methodTypes = Object.entries(methods[1]);
                                 methodTypes.map(function (type) {
                                     if (type.length === 2) {
@@ -566,10 +566,10 @@ const CrowdSec = (function () {
         const id = "#tab-metrics-lapi";
         const dataCallback = function (data) {
             const rows = [];
-            if(data.lapi){
+            if (data.lapi) {
                 const infos = Object.entries(data.lapi);
                 infos.map(function (info) {
-                    if(info.length === 2){
+                    if (info.length === 2) {
                         const routes = Object.entries(info[1]);
                         routes.map(function (route) {
                             if (route.length === 2) {
@@ -589,15 +589,15 @@ const CrowdSec = (function () {
         _initTab(id, action, dataCallback);
     }
 
-    function initService () {
+    function initService() {
         $.ajax({
             url: api_url,
             cache: false,
             dataType: 'json',
-            data: {action: 'services-status'},
+            data: { action: 'services-status' },
             type: 'POST',
             method: 'POST',
-            success: function(data) {
+            success: function (data) {
                 var crowdsecStatus = data['crowdsec-status'];
                 if (crowdsecStatus === 'unknown') {
                     crowdsecStatus = '<span class="text-danger">Unknown</span>';
@@ -711,6 +711,16 @@ const CrowdSec = (function () {
     function initStatus() {
         // Machines tab is the first to be visible
         $("#tabs").tabs({
+            beforeActivate: function (event, ui) {
+                switch (ui.newPanel[0].id) {
+                    case 'hub-tabs':
+                        event.preventDefault();
+                        //$('#hub-dropdown').toggle();
+                        break;
+                    default:
+                        break
+                }
+            },
             activate: function (event, ui) {
                 switch (ui.newPanel[0].id) {
                     case 'tab-status-alerts':
@@ -719,14 +729,14 @@ const CrowdSec = (function () {
                     case 'tab-status-bouncers':
                         _initStatusBouncers();
                         break;
-                    case 'tab-status-collections':
-                        _initStatusCollections();
-                        break;
                     case 'tab-status-decisions':
                         _initStatusDecisions();
                         break;
                     case 'tab-status-machines':
                         _initStatusMachines();
+                        break;
+                    case 'tab-status-collections':
+                        _initStatusCollections();
                         break;
                     case 'tab-status-parsers':
                         _initStatusParsers();
@@ -750,8 +760,18 @@ const CrowdSec = (function () {
             _handleStatusHash(window.location.hash);
         });
 
-        $(window).on('popstate', function(event) {
+        $(window).on('popstate', function (event) {
             _handleStatusHash(window.location.hash);
+        });
+
+        $('#hub-dropdown li').on('click', function () {
+            const dataTabValue = $(this).data('tab');
+            const $targetLink = $("li.hub a").filter(function () {
+                return $(this).attr('href') === `#${dataTabValue}`;
+            });
+            if ($targetLink.length) {
+                $targetLink.click();
+            }
         });
     }
 
@@ -797,7 +817,7 @@ const CrowdSec = (function () {
             _handleMetricsHash(window.location.hash);
         });
 
-        $(window).on('popstate', function(event) {
+        $(window).on('popstate', function (event) {
             _handleMetricsHash(window.location.hash);
         });
     }
