@@ -247,7 +247,7 @@ $content = <<<EOT
         <table id="table-status-collections" class="table table-condensed table-hover table-striped crowdsecTable">
             <thead>
                 <tr>
-                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="name" data-order="asc">Collection</th>
                   <th data-column-id="status">Status</th>
                   <th data-column-id="local_version">Version</th>
                   <th data-visible="false" data-column-id="local_path">Path</th>
@@ -266,7 +266,7 @@ $content = <<<EOT
         <table id="table-status-scenarios" class="table table-condensed table-hover table-striped crowdsecTable">
             <thead>
                 <tr>
-                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="name" data-order="asc">Scenario</th>
                   <th data-column-id="status">Status</th>
                   <th data-column-id="local_version">Version</th>
                   <th data-visible="false" data-column-id="local_path">Path</th>
@@ -285,7 +285,7 @@ $content = <<<EOT
         <table id="table-status-parsers" class="table table-condensed table-hover table-striped crowdsecTable">
             <thead>
                 <tr>
-                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="name" data-order="asc">Parser</th>
                   <th data-column-id="status">Status</th>
                   <th data-column-id="local_version">Version</th>
                   <th data-visible="false" data-column-id="local_path">Path</th>
@@ -304,7 +304,7 @@ $content = <<<EOT
       <table id="table-status-postoverflows" class="table table-condensed table-hover table-striped crowdsecTable">
             <thead>
                 <tr>
-                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="name" data-order="asc">Postoverflow</th>
                   <th data-column-id="status">Status</th>
                   <th data-column-id="local_version">Version</th>
                   <th data-visible="false" data-column-id="local_path">Path</th>
@@ -323,7 +323,7 @@ $content = <<<EOT
       <table id="table-status-appsec-configs" class="table table-condensed table-hover table-striped crowdsecTable">
             <thead>
                 <tr>
-                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="name" data-order="asc">Appsec-config</th>
                   <th data-column-id="status">Status</th>
                   <th data-column-id="local_version">Version</th>
                   <th data-visible="false" data-column-id="local_path">Path</th>
@@ -342,7 +342,7 @@ $content = <<<EOT
       <table id="table-status-appsec-rules" class="table table-condensed table-hover table-striped crowdsecTable">
             <thead>
                 <tr>
-                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="name" data-order="asc">Appsec-rule</th>
                   <th data-column-id="status">Status</th>
                   <th data-column-id="local_version">Version</th>
                   <th data-visible="false" data-column-id="local_path">Path</th>
@@ -361,7 +361,7 @@ $content = <<<EOT
       <table id="table-status-contexts" class="table table-condensed table-hover table-striped crowdsecTable">
             <thead>
                 <tr>
-                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="name" data-order="asc">Context</th>
                   <th data-column-id="status">Status</th>
                   <th data-column-id="local_version">Version</th>
                   <th data-visible="false" data-column-id="local_path">Path</th>
