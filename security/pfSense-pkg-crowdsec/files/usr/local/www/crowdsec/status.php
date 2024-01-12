@@ -175,18 +175,18 @@ $content = <<<EOT
             <li data-tab="tab-status-scenarios">Scenarios</li>
             <li data-tab="tab-status-parsers">Parsers</li>
             <li data-tab="tab-status-postoverflows">Postoverflows</li>
-            <li data-tab="appsec-configs">appsec-configs</li>
-            <li data-tab="appsec-ruless">appsec-rules</li>
-            <li data-tab="contexts">contexts</li>
+            <li data-tab="tab-status-appsec-configs">Appsec-configs</li>
+            <li data-tab="tab-status-appsec-rules">Appsec-rules</li>
+            <li data-tab="tab-status-contexts">Contexts</li>
         </ul>
     </li>
     <li class="hub"><a href="#tab-status-collections"></a></li>
     <li class="hub"><a href="#tab-status-scenarios"></a></li>
     <li class="hub"><a href="#tab-status-parsers"></a></li>
     <li class="hub"><a href="#tab-status-postoverflows"></a></li>
-    <li class="hub"><a href="#appsec-configs"></a></li>
-    <li class="hub"><a href="#appsec-rules"></a></li>
-    <li class="hub"><a href="#contexts"></a></li>
+    <li class="hub"><a href="#tab-status-appsec-configs"></a></li>
+    <li class="hub"><a href="#tab-status-appsec-rules"></a></li>
+    <li class="hub"><a href="#tab-status-contexts"></a></li>
   </ul>
   <div class="loading"><i class="fa fa-spinner fa-spin"></i>Loading, please wait..</div>
   $machinesTab
@@ -302,6 +302,63 @@ $content = <<<EOT
     </div>
     <div id="tab-status-postoverflows">
       <table id="table-status-postoverflows" class="table table-condensed table-hover table-striped crowdsecTable">
+            <thead>
+                <tr>
+                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="status">Status</th>
+                  <th data-column-id="local_version">Version</th>
+                  <th data-visible="false" data-column-id="local_path">Path</th>
+                  <th data-column-id="description">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+            <tfoot>
+                <tr>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div id="tab-status-appsec-configs">
+      <table id="table-status-appsec-configs" class="table table-condensed table-hover table-striped crowdsecTable">
+            <thead>
+                <tr>
+                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="status">Status</th>
+                  <th data-column-id="local_version">Version</th>
+                  <th data-visible="false" data-column-id="local_path">Path</th>
+                  <th data-column-id="description">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+            <tfoot>
+                <tr>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div id="tab-status-appsec-rules">
+      <table id="table-status-appsec-rules" class="table table-condensed table-hover table-striped crowdsecTable">
+            <thead>
+                <tr>
+                  <th data-column-id="name" data-order="asc">Name</th>
+                  <th data-column-id="status">Status</th>
+                  <th data-column-id="local_version">Version</th>
+                  <th data-visible="false" data-column-id="local_path">Path</th>
+                  <th data-column-id="description">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+            <tfoot>
+                <tr>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+     <div id="tab-status-contexts">
+      <table id="table-status-contexts" class="table table-condensed table-hover table-striped crowdsecTable">
             <thead>
                 <tr>
                   <th data-column-id="name" data-order="asc">Name</th>

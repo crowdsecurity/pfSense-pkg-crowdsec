@@ -213,7 +213,28 @@ const CrowdSec = (function () {
         const id = "#tab-status-collections";
         const dataCallback = function (data) {
             const rows = [];
-            data.collections.map(function (row) {
+            if (data.collections) {
+                data.collections.map(function (row) {
+                    rows.push({
+                        name: row.name,
+                        status: row.status,
+                        local_version: row.local_version || ' ',
+                        local_path: row.local_path ? row.local_path.replace(crowdsec_path, '') : ' ',
+                        description: row.description || ' '
+                    });
+                });
+            }
+            $(id + ' table').bootgrid('clear').bootgrid('append', rows);
+        };
+        _initTab(id, action, dataCallback);
+    }
+
+    function _initStatusScenarios() {
+        const action = 'status-scenarios-list';
+        const id = "#tab-status-scenarios";
+        const dataCallback = function (data) {
+            const rows = [];
+            data.scenarios.map(function (row) {
                 rows.push({
                     name: row.name,
                     status: row.status,
@@ -227,12 +248,50 @@ const CrowdSec = (function () {
         _initTab(id, action, dataCallback);
     }
 
-    function _initStatusScenarios() {
-        const action = 'status-scenarios-list';
-        const id = "#tab-status-scenarios";
+    function _initStatusAppsecConfigs() {
+        const action = 'status-appsec-configs-list';
+        const id = "#tab-status-appsec-configs";
         const dataCallback = function (data) {
             const rows = [];
-            data.scenarios.map(function (row) {
+            data["appsec-configs"].map(function (row) {
+                rows.push({
+                    name: row.name,
+                    status: row.status,
+                    local_version: row.local_version || ' ',
+                    local_path: row.local_path ? row.local_path.replace(crowdsec_path, '') : ' ',
+                    description: row.description || ' '
+                });
+            });
+            $(id + ' table').bootgrid('clear').bootgrid('append', rows);
+        };
+        _initTab(id, action, dataCallback);
+    }
+
+    function _initStatusAppsecRules() {
+        const action = 'status-appsec-rules-list';
+        const id = "#tab-status-appsec-rules";
+        const dataCallback = function (data) {
+            const rows = [];
+            data["appsec-rules"].map(function (row) {
+                rows.push({
+                    name: row.name,
+                    status: row.status,
+                    local_version: row.local_version || ' ',
+                    local_path: row.local_path ? row.local_path.replace(crowdsec_path, '') : ' ',
+                    description: row.description || ' '
+                });
+            });
+            $(id + ' table').bootgrid('clear').bootgrid('append', rows);
+        };
+        _initTab(id, action, dataCallback);
+    }
+
+    function _initStatusContexts() {
+        const action = 'status-contexts-list';
+        const id = "#tab-status-contexts";
+        const dataCallback = function (data) {
+            const rows = [];
+            data.contexts.map(function (row) {
                 rows.push({
                     name: row.name,
                     status: row.status,
@@ -672,6 +731,15 @@ const CrowdSec = (function () {
             case '#tab-status-scenarios':
                 _initStatusScenarios();
                 break;
+            case '#tab-status-appsec-configs':
+                _initStatusAppsecConfigs();
+                break;
+            case '#tab-status-appsec-rules':
+                _initStatusAppsecRules();
+                break;
+            case '#tab-status-contexts':
+                _initStatusContexts();
+                break;
             default:
                 // First tab is collection for remote lapi
                 if ($('#li-status-machines').length === 0) {
@@ -751,6 +819,15 @@ const CrowdSec = (function () {
                         break;
                     case 'tab-status-scenarios':
                         _initStatusScenarios();
+                        break;
+                    case 'tab-status-appsec-configs':
+                        _initStatusAppsecConfigs();
+                        break;
+                    case 'tab-status-appsec-rules':
+                        _initStatusAppsecRules();
+                        break;
+                    case 'tab-status-contexts':
+                        _initStatusContexts();
                         break;
                     default:
                         _initStatusMachines();
