@@ -56,28 +56,40 @@ border: 1px solid #000000;
 padding: 10px 10px 0px 10px;
 }
 
+#hub-dropdown-parent .fa-caret-down {
+    font-size: inherit;
+}
 
-/* Style the hub-dropdown ul */
 #hub-dropdown {
-    position: absolute; /* Position it absolutely relative to the parent li */
-    top: 100%; /* Position it below the parent li */
-    left: 0; /* Align it with the left edge of the parent li */
-    background-color: #fff; /* Background color for the submenu */
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Add a shadow for depth */
-    display: none; /* Initially hide the submenu */
-    z-index: 1; /* Ensure the submenu appears on top of other elements */
+    position: absolute;
+    top: 100%;
+    left: 0; 
+    background-color: #fff;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    display: none;
+    z-index: 1;
+    padding-left:0px;
 }
 
-/* Style the individual submenu items */
 #hub-dropdown li {
-    padding: 10px; /* Add padding for spacing */
-    border-bottom: 1px solid #ddd; /* Add a separator between items */
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    color: #454545;
+    cursor: pointer;
+    width:100%;
+}
+#hub-dropdown li:hover {
+    background-color: #ededed;
+}
+#hub-dropdown li:last-child {
+    border-bottom: none;
 }
 
-/* Style the hover effect for the parent li */
-#hub-dropdown-parent:hover #hub-dropdown {
-    display: block; /* Show the submenu when the parent li is hovered */
+#hub-dropdown li.active {
+    background-color: #007FFF;
+    color: #ffffff;
 }
+
 
 .hub {
     display: none;
@@ -92,8 +104,8 @@ EOT;
 $cf = config_get_path('installedpackages/crowdsec/config/0', []);
 $isRemoteLapi = empty($cf['enable_lapi']);
 
-$machinesLi = $isRemoteLapi ? '' : '<li id="li-status-machines"><a href="#tab-status-machines">Machines</a></li>';
-$bouncersLi = $isRemoteLapi ? '' : '<li><a href="#tab-status-bouncers">Bouncers</a></li>';
+$machinesLi = $isRemoteLapi ? '' : '<li class="main-tab" id="li-status-machines"><a href="#tab-status-machines">Machines</a></li>';
+$bouncersLi = $isRemoteLapi ? '' : '<li class="main-tab"><a href="#tab-status-bouncers">Bouncers</a></li>';
 $machinesTab = $isRemoteLapi ? '' : '<div id="tab-status-machines">
     <table id="table-status-machines" class="table table-condensed table-hover table-striped crowdsecTable">
             <thead>
@@ -154,8 +166,8 @@ $content = <<<EOT
   <ul>
     $machinesLi
     $bouncersLi
-    <li><a href="#tab-status-alerts">Alerts</a></li>
-    <li><a href="#tab-status-decisions">Decisions</a></li>
+    <li class="main-tab"><a href="#tab-status-alerts">Alerts</a></li>
+    <li class="main-tab"><a href="#tab-status-decisions">Decisions</a></li>
     <li id="hub-dropdown-parent">
         <a href="#hub-tabs">Hub <i class="fa fa-caret-down"></i></a>
         <ul id="hub-dropdown">
@@ -168,13 +180,13 @@ $content = <<<EOT
             <li data-tab="contexts">contexts</li>
         </ul>
     </li>
-    <li class="hub"><a href="#tab-status-collections">Collections</a></li>
-    <li class="hub"><a href="#tab-status-scenarios">Scenarios</a></li>
-    <li class="hub"><a href="#tab-status-parsers">Parsers</a></li>
-    <li class="hub"><a href="#tab-status-postoverflows">Postoverflows</a></li>
-    <li class="hub"><a href="#appsec-configs">appsec-configs</a></li>
-    <li class="hub"><a href="#appsec-rules">appsec-rules</a></li>
-    <li class="hub"><a href="#contexts">contexts</a></li>
+    <li class="hub"><a href="#tab-status-collections"></a></li>
+    <li class="hub"><a href="#tab-status-scenarios"></a></li>
+    <li class="hub"><a href="#tab-status-parsers"></a></li>
+    <li class="hub"><a href="#tab-status-postoverflows"></a></li>
+    <li class="hub"><a href="#appsec-configs"></a></li>
+    <li class="hub"><a href="#appsec-rules"></a></li>
+    <li class="hub"><a href="#contexts"></a></li>
   </ul>
   <div class="loading"><i class="fa fa-spinner fa-spin"></i>Loading, please wait..</div>
   $machinesTab

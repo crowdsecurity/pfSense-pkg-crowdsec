@@ -641,6 +641,12 @@ const CrowdSec = (function () {
     }
 
     function _handleStatusHash(hash) {
+        $('#hub-dropdown li').each(function () {
+            if ($(this).data('tab') === hash.replace('#', '')) {
+                $(this).addClass('active');
+                $('#hub-dropdown-parent').addClass('ui-tabs-active ui-state-active');
+            }
+        });
         switch (hash) {
             case '#tab-status-alerts':
                 _initStatusAlerts();
@@ -715,7 +721,6 @@ const CrowdSec = (function () {
                 switch (ui.newPanel[0].id) {
                     case 'hub-tabs':
                         event.preventDefault();
-                        //$('#hub-dropdown').toggle();
                         break;
                     default:
                         break
@@ -764,6 +769,19 @@ const CrowdSec = (function () {
             _handleStatusHash(window.location.hash);
         });
 
+        // Handle Hub tab
+        $("#hub-dropdown-parent").mouseenter(function () {
+            $("#hub-dropdown").show();
+        }).mouseleave(function () {
+            $("#hub-dropdown").hide();
+        });
+        $('#tabs li').on('click', function () {
+            const parent = $(this).parent('ul');
+            if ($(this).hasClass("main-tab")) {
+                $('#hub-dropdown-parent').removeClass('ui-tabs-active ui-state-active');
+                $('#hub-dropdown li').removeClass('active');
+            }
+        });
         $('#hub-dropdown li').on('click', function () {
             const dataTabValue = $(this).data('tab');
             const $targetLink = $("li.hub a").filter(function () {
@@ -772,6 +790,11 @@ const CrowdSec = (function () {
             if ($targetLink.length) {
                 $targetLink.click();
             }
+            $('#hub-dropdown-parent').mouseleave();
+            $('#tabs li').removeClass('ui-tabs-active ui-state-active');
+            $('#hub-dropdown-parent').addClass('ui-tabs-active ui-state-active');
+            $('#hub-dropdown li').removeClass('active');
+            $(this).addClass('active');
         });
     }
 
