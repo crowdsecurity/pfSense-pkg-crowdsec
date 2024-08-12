@@ -404,6 +404,7 @@ function crowdsec_resync_config()
                 if (!file_exists(CROWDSEC_PFSENSE_COLLECTION)) {
                     if (!empty($crowdsec_conf)) {
                         shell_exec("cscli hub update");
+                        shell_exec("cscli hub upgrade");
                         shell_exec("cscli --error collections install crowdsecurity/pfsense");
                         // We assume reloading won't fail
                         shell_exec("service crowdsec reload");
