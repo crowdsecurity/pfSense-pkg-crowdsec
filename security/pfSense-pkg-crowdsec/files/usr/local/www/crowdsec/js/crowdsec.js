@@ -17,7 +17,7 @@ const CrowdSec = (function () {
     },
 
     delete: function (column, row) {
-      var val = row.id;
+      const val = row.id;
       if (isNaN(val)) {
         return '';
       }
@@ -31,7 +31,7 @@ const CrowdSec = (function () {
     },
 
     duration: function (column, row) {
-      var duration = row[column.id];
+      const duration = row[column.id];
       if (!duration) {
         return 'n/a';
       }
@@ -46,8 +46,8 @@ const CrowdSec = (function () {
     },
 
     datetime: function (column, row) {
-      var dt = row[column.id];
-      var parsed = moment(dt);
+      const dt = row[column.id];
+      const parsed = moment(dt);
       if (!dt) {
         return '';
       }
@@ -89,15 +89,15 @@ const CrowdSec = (function () {
   }
 
   function _updateFreshness(selector, timestamp) {
-    var $freshness = $(selector).find('.actionBar .freshness');
+    const $freshness = $(selector).find('.actionBar .freshness');
     if (timestamp) {
       $freshness.data('refresh_timestamp', timestamp);
     } else {
       timestamp = $freshness.data('refresh_timestamp');
     }
-    var howlongHuman = '???';
+    const howlongHuman = '???';
     if (timestamp) {
-      var howlongms = moment() - moment(timestamp);
+      const howlongms = moment() - moment(timestamp);
       howlongHuman = moment.duration(howlongms).humanize();
     }
     $freshness.text(howlongHuman + ' ago');
@@ -105,7 +105,7 @@ const CrowdSec = (function () {
 
   function _addFreshness(selector) {
     // this creates one timer per tab
-    var freshnessTemplate =
+    const freshnessTemplate =
       '<span style="float:left;"><i>Last refresh: <span class="freshness"></span></i></span>';
     $(selector).find('.actionBar').prepend(freshnessTemplate);
     setInterval(function () {
@@ -131,9 +131,9 @@ const CrowdSec = (function () {
   }
 
   function _parseDuration(duration) {
-    var re = /(-?)(?:(?:(\d+)h)?(\d+)m)?(\d+).\d+(m?)s/m;
-    var matches = duration.match(re);
-    var seconds = 0;
+    const re = /(-?)(?:(?:(\d+)h)?(\d+)m)?(\d+).\d+(m?)s/m;
+    const matches = duration.match(re);
+    let seconds = 0;
 
     if (!matches.length) {
       throw new Error(
@@ -730,7 +730,7 @@ const CrowdSec = (function () {
       type: 'POST',
       method: 'POST',
       success: function (data) {
-        var crowdsecStatus = data['crowdsec-status'];
+        let crowdsecStatus = data['crowdsec-status'];
         if (crowdsecStatus === 'unknown') {
           crowdsecStatus = '<span class="text-danger">Unknown</span>';
         } else {
@@ -738,7 +738,7 @@ const CrowdSec = (function () {
         }
         $('#crowdsec-status').html(crowdsecStatus);
 
-        var crowdsecFirewallStatus = data['crowdsec-firewall-status'];
+        let crowdsecFirewallStatus = data['crowdsec-firewall-status'];
         if (crowdsecFirewallStatus === 'unknown') {
           crowdsecFirewallStatus = '<span class="text-danger">Unknown</span>';
         } else {
