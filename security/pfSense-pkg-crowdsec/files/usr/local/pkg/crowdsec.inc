@@ -74,16 +74,12 @@ function crowdsec_validate_form($post, &$input_errors)
     }
     // Use external LAPI
     if (empty($post['enable_lapi'])) {
-        if (empty($post['remote_lapi_port'])) {
-            $input_errors[] = 'Remote LAPI port is required for remote LAPI.';
+        if (empty($post['remote_lapi_url'])) {
+            $input_errors[] = 'An URL is required for remote LAPI.';
         } else {
-            $remote_lapi_port = $post['remote_lapi_port'];
-            if (!is_numeric($remote_lapi_port)) {
-                $input_errors[] = 'Remote LAPI port must be a numeric value.';
+            if (filter_var($post['remote_lapi_url'], FILTER_VALIDATE_URL) === FALSE) {
+                $input_errors[] = 'Remote LAPI URL is not valid.';
             }
-        }
-        if (empty($post['remote_lapi_host'])) {
-            $input_errors[] = 'Remote LAPI host is required for remote LAPI.';
         }
         if (empty($post['remote_agent_user'])) {
             $input_errors[] = 'Agent user is required for external LAPI usage.';
@@ -271,6 +267,15 @@ function crowdsec_resync_config()
     if (!$cf) {
         return;
     }
+
+    // for backward compatibility, convert remote_lapi_host and remote_lapi_port to remote_lapi_url
+    if (empty($cf['remote_lapi_url']) && !empty($cf['remote_lapi_host'])) {
+        $cf['remote_lapi_url'] = 'http://' . $cf['remote_lapi_host'] . ':' . $cf['remote_lapi_port'];
+        unset($cf['remote_lapi_host']);
+        unset($cf['remote_lapi_port']);
+        config_set_path('installedpackages/crowdsec/config/0', $cf);
+    }
+
     // Init some flags to handle services management
     $should_use_crowdsec = false;
     $should_use_firewall = false;
@@ -302,7 +307,7 @@ function crowdsec_resync_config()
         if (!empty($fw_conf)) {
             $fw_conf['api_key'] = '${API_KEY}';
             if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
-                $fw_conf['api_url'] = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'] . '/';
+                $fw_conf['api_url'] = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'];
             }
         }
 
@@ -328,8 +333,9 @@ function crowdsec_resync_config()
                 $lapi_credentials['login'] = $cf['remote_agent_user'];
                 $lapi_credentials['password'] = $cf['remote_agent_password'];
             }
-            if (!empty($cf['remote_lapi_port']) && !empty($cf['remote_lapi_host'])) {
-                $lapi_credentials['url'] = 'http://' . $cf['remote_lapi_host'] . ':' . $cf['remote_lapi_port'];
+            if (!empty($cf['remote_lapi_url'])) {
+                // TODO: clean up the url??
+                $lapi_credentials['url'] = $cf['remote_lapi_url'];
             }
         }
         // Modify Firewall bouncer yaml config
@@ -337,8 +343,8 @@ function crowdsec_resync_config()
             if (!empty($cf['remote_fw_bouncer_api_key'])) {
                 $fw_conf['api_key'] = $cf['remote_fw_bouncer_api_key'];
             }
-            if (!empty($cf['remote_lapi_port']) && !empty($cf['remote_lapi_host'])) {
-                $fw_conf['api_url'] = 'http://' . $cf['remote_lapi_host'] . ':' . $cf['remote_lapi_port'] . '/';
+            if (!empty($cf['remote_lapi_url'])) {
+                $fw_conf['api_url'] = $cf['remote_lapi_url'];
             }
         }
     }
