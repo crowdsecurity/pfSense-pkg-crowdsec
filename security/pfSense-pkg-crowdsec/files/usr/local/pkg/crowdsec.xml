@@ -154,7 +154,7 @@
             <description>Full URL of the LAPI endpoint, i.e.: http://remote-address:8080/</description>
         </field>
         <field>
-            <fielddescr>User</fielddescr>
+            <fielddescr>Login</fielddescr>
             <fieldname>remote_agent_user</fieldname>
             <type>input</type>
             <description>Name of the pfSense machine in the remote LAPI</description>

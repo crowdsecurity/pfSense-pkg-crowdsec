@@ -57,6 +57,32 @@ $crowdsec_aliases = array(
 
 );
 
+
+/**
+ * update the XML configuration: convert old options, drop deprecated, etc.
+ *
+ * @return void
+ */
+function crowdsec_config_migrate()
+{
+    parse_config(true);
+    $cf = config_get_path('installedpackages/crowdsec/config/0', []);
+
+    // noop on fresh install
+    if (!$cf) {
+        return;
+    }
+
+    // for backward compatibility, convert remote_lapi_host and remote_lapi_port to remote_lapi_url
+    if (empty($cf['remote_lapi_url']) && !empty($cf['remote_lapi_host'])) {
+        $cf['remote_lapi_url'] = 'http://' . $cf['remote_lapi_host'] . ':' . $cf['remote_lapi_port'];
+        unset($cf['remote_lapi_host']);
+        unset($cf['remote_lapi_port']);
+        config_set_path('installedpackages/crowdsec/config/0', $cf);
+    }
+    write_config('pfsense_crowdsec: configuration updated.');
+}
+
 /**
  * custom_php_validation_command hook (setting edition before submit)
  *
@@ -123,6 +149,7 @@ function crowdsec_validate_form($post, &$input_errors)
  */
 function crowdsec_install()
 {
+    crowdsec_config_migrate();
     $candidate_log_dir = '/var/log/crowdsec/';
     $candidate_log_max_size = 999999;
     global $crowdsec_aliases;
@@ -266,14 +293,6 @@ function crowdsec_resync_config()
     // Do not resync on first fresh install
     if (!$cf) {
         return;
-    }
-
-    // for backward compatibility, convert remote_lapi_host and remote_lapi_port to remote_lapi_url
-    if (empty($cf['remote_lapi_url']) && !empty($cf['remote_lapi_host'])) {
-        $cf['remote_lapi_url'] = 'http://' . $cf['remote_lapi_host'] . ':' . $cf['remote_lapi_port'];
-        unset($cf['remote_lapi_host']);
-        unset($cf['remote_lapi_port']);
-        config_set_path('installedpackages/crowdsec/config/0', $cf);
     }
 
     // Init some flags to handle services management
