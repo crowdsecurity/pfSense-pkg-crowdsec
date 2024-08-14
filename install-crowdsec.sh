@@ -52,6 +52,7 @@ set_vars() {
     if [ "$(uname -i)" != "pfSense" ]; then
         echo "Warning: This script is intended for pfSense systems."
         echo "If this is not the case you will be able to download the packages, but you may not be able to use them."
+        echo
     fi
 
     if [ -n "$RELEASE_TAG" ]; then
@@ -81,7 +82,7 @@ get_archive() {
         exit 1
     fi
 
-    echo "Downloading archive: $ASSET_URL to $TARFILE"
+    echo "Downloading archive: $ASSET_URL"
 
     download "$ASSET_URL" > "$TARFILE"
 }
@@ -91,6 +92,12 @@ install_packages() {
     if ! command -v pkg > /dev/null; then
         echo "Error: The 'pkg' command is not available on this system."
         echo "Please manually install the packages using 'pkg add -f' on a pfSense system, or run this script there."
+        exit 1
+    fi
+
+    if [ "$(id -u)" -ne 0 ]; then
+        echo
+        echo "This script must be run as root. Please run it as root or manually install the packages."
         exit 1
     fi
 
