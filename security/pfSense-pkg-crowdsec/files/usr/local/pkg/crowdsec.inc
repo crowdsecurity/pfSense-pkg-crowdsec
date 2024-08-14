@@ -339,8 +339,8 @@ function crowdsec_resync_config()
          * @see /usr/local/etc/rc.d/crowdsec_firewall
          */
         // there is no --force option, we ignore errors if the machine or bouncer don't exist
-        mwexec('cscli bouncers delete pfsense-firewall 2>/dev/null');
-        mwexec('cscli machines delete pfsense 2>/dev/null');
+        mwexec('cscli bouncers delete pfsense-firewall --ignore-missing');
+        mwexec('cscli machines delete pfsense --ignore-missing');
     } else { // Handle Remote LAPI ON (e.g. LAPI OFF)
         // Modify Agent yaml config
         if (!empty($crowdsec_conf)) {
