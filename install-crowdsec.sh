@@ -30,6 +30,9 @@ terminate_services() {
             fi
         fi
     done
+
+    # prevent the services from starting before the plugin configures the filter tables
+    rm -f /var/run/crowdsec.running /var/run/crowdsec_firewall.running
 }
 
 # Set variables used by get_archive
