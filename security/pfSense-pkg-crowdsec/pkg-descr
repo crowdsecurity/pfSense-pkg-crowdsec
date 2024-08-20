@@ -11,6 +11,7 @@ Package Changelog
 0.1.4
 
  * allow overriding scheme and path in remote LAPI URL
+ * require crowdsec 1.6.3
 
 0.1.3
 
