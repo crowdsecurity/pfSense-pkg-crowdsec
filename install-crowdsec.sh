@@ -178,6 +178,11 @@ install_packages() {
 
 
 uninstall_packages() {
+    if [ "$(uname -s)" != "FreeBSD" ]; then
+        echo "Error: The --uninstall option is intended for FreeBSD systems."
+        exit 1
+    fi
+
     if [ "$(id -u)" -ne 0 ]; then
         echo
         echo "This script must be run as root to uninstall the packages."
@@ -227,24 +232,6 @@ uninstall_packages() {
 
 # -------------- #
 
-echo "#----------------------------------------------------------------#"
-echo "# This script is intended to be used only if the CrowdSec        #"
-echo "# package is not available in the official pfSense repositories, #"
-echo "# or to test pre-release versions.                               #"
-echo "# Please check the pfSense package manager before proceeding.    #"
-echo "#----------------------------------------------------------------#"
-echo
-
-# Prompt user for confirmation to proceed
-printf "Do you want to continue? (y/N) "
-read -r REPLY
-if [ "$REPLY" != "y" ] && [ "$REPLY" != "Y" ]; then
-    echo "Operation canceled."
-    exit 1
-fi
-
-echo
-
 RELEASE_TAG=""
 ARCH=""
 FREEBSD_VERSION=""
@@ -268,6 +255,11 @@ while [ $# -gt 0 ]; do
             TARFILE="$2"
             shift
             ;;
+        --uninstall)
+            uninstall_packages
+            shift
+            exit 0
+            ;;
         *)
             echo "Usage: $0 [--release <version>] [--arch <architecture>] [--freebsd <version>] | [--from <tarfile>]"
             exit 1
@@ -275,6 +267,24 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+echo "#----------------------------------------------------------------#"
+echo "# This script is intended to be used only if the CrowdSec        #"
+echo "# package is not available in the official pfSense repositories, #"
+echo "# or to test pre-release versions.                               #"
+echo "# Please check the pfSense package manager before proceeding.    #"
+echo "#----------------------------------------------------------------#"
+echo
+
+# Prompt user for confirmation to proceed
+printf "Do you want to continue? (y/N) "
+read -r REPLY
+if [ "$REPLY" != "y" ] && [ "$REPLY" != "Y" ]; then
+    echo "Operation canceled."
+    exit 1
+fi
+
+echo
 
 if [ -n "$TARFILE" ]; then
     if [ -n "$RELEASE_TAG" ] || [ -n "$ARCH" ] || [ -n "$FREEBSD_VERSION" ]; then
