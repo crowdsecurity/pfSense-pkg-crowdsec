@@ -46,7 +46,6 @@ if ($method === 'DELETE' && isset($_GET['action']) && isset($_GET['decision_id']
         else {
             echo $default;
         }
-
     } else {
         echo $default;
     }

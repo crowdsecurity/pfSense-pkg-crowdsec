@@ -2,7 +2,6 @@
 
 set -e
 
-
 # Allow downloading on other systems too
 download() {
     if command -v fetch > /dev/null; then
@@ -82,7 +81,19 @@ get_archive() {
         exit 1
     fi
 
+    echo
+    echo "The archive to be downloaded is: $ASSET_URL"
+
+    echo
+    printf "Do you want to proceed with the download? (y/N) "
+    read -r REPLY
+    if [ "$REPLY" != "y" ] && [ "$REPLY" != "Y" ]; then
+        echo "Download canceled."
+        exit 1
+    fi
+
     echo "Downloading archive: $ASSET_URL"
+    echo "done."
 
     download "$ASSET_URL" > "$TARFILE"
 }
@@ -90,6 +101,7 @@ get_archive() {
 
 install_packages() {
     if ! command -v pkg > /dev/null; then
+        echo
         echo "Error: The 'pkg' command is not available on this system."
         echo "Please manually install the packages using 'pkg add -f' on a pfSense system, or run this script there."
         exit 1
@@ -102,6 +114,7 @@ install_packages() {
     fi
 
     TMP_DIR=$(mktemp -d)
+    trap 'rm -rf "$TMP_DIR"' EXIT
 
     echo "Extracting archive to $TMP_DIR"
     tar -xzf "$TARFILE" -C "$TMP_DIR"
@@ -110,7 +123,7 @@ install_packages() {
     PKG_FILES="abseil re2 crowdsec-firewall-bouncer crowdsec pfSense-pkg-crowdsec"
 
     echo
-    echo "The following packages will be installed:"
+    echo "The following packages are ready for installation:"
 
     PKG_PATHS=""
     for package in $PKG_FILES; do
@@ -126,10 +139,10 @@ install_packages() {
     done
 
     echo
-    printf "Do you want to continue with the installation? (y/N) "
+    printf "Do you want to install them now? (y/N) "
     read -r REPLY
     if [ "$REPLY" != "y" ] && [ "$REPLY" != "Y" ]; then
-        echo "Installation aborted."
+        echo "Installation canceled."
         exit 1
     fi
 
@@ -155,6 +168,24 @@ install_packages() {
 }
 
 # -------------- #
+
+echo "#----------------------------------------------------------------#"
+echo "# This script is intended to be used only if the CrowdSec        #"
+echo "# package is not available in the official pfSense repositories, #"
+echo "# or to test pre-release versions.                               #"
+echo "# Please check the pfSense package manager before proceeding.    #"
+echo "#----------------------------------------------------------------#"
+echo
+
+# Prompt user for confirmation to proceed
+printf "Do you want to continue? (y/N) "
+read -r REPLY
+if [ "$REPLY" != "y" ] && [ "$REPLY" != "Y" ]; then
+    echo "Operation canceled."
+    exit 1
+fi
+
+echo
 
 RELEASE_TAG=""
 ARCH=""
