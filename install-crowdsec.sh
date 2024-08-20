@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e
+set -eu
 
 # Allow downloading on other systems too
 download() {
@@ -16,6 +16,21 @@ download() {
     fi
 }
 
+terminate_services() {
+    echo "Stopping crowdsec services..."
+    PID_FILES="/var/run/crowdsec_daemon.pid /var/run/crowdsec.pid /var/run/crowdsec_firewall.pid"
+    for pidfile in $PID_FILES; do
+        if [ -f "$pidfile" ]; then
+            PID=$(cat "$pidfile")
+            if kill -0 "$PID" > /dev/null 2>&1; then
+                # don't use TERM, to make sure sbin/daemon doesn't hang if crowdsec is misconfigured
+                kill -INT "$PID" || true
+            else
+                echo "Process $PID (from $pidfile) is not running."
+            fi
+        fi
+    done
+}
 
 # Set variables used by get_archive
 set_vars() {
@@ -120,13 +135,13 @@ install_packages() {
     tar -xzf "$TARFILE" -C "$TMP_DIR"
 
     # Install the packages in order to respect the dependencies
-    PKG_FILES="abseil re2 crowdsec-firewall-bouncer crowdsec pfSense-pkg-crowdsec"
+    PKG_NAMES="abseil re2 crowdsec-firewall-bouncer crowdsec pfSense-pkg-crowdsec"
 
     echo
     echo "The following packages are ready for installation:"
 
     PKG_PATHS=""
-    for package in $PKG_FILES; do
+    for package in $PKG_NAMES; do
         # match a digit from the version to avoid matching other packages too
         PKG_PATH=$(find "$TMP_DIR" -name "$package-[0-9]*.pkg")
         if [ -n "$PKG_PATH" ]; then
@@ -146,13 +161,7 @@ install_packages() {
         exit 1
     fi
 
-    echo "Stopping crowdsec service..."
-    # make sure sbin/daemon doesn't hang if crowdsec is misconfigured (TERM -> INT)
-    for pidfile in /var/run/crowdsec_daemon.pid /var/run/crowdsec.pid /var/run/crowdsec_firewall.pid; do
-        if [ -f "$pidfile" ]; then
-            kill -INT "$(cat "$pidfile")" || true
-        fi
-    done
+    terminate_services
 
     for PKG_PATH in $PKG_PATHS; do
         echo "Installing $(basename "$PKG_PATH")"
@@ -166,6 +175,55 @@ install_packages() {
     echo "Installation complete."
     echo "You can configure and activate CrowdSec on you pfSense admin page (Package / Services: CrowdSec)."
 }
+
+
+uninstall_packages() {
+    if [ "$(id -u)" -ne 0 ]; then
+        echo
+        echo "This script must be run as root to uninstall the packages."
+        exit 1
+    fi
+
+    # Uninstall the packages in order of dependency
+    PKG_NAMES="pfSense-pkg-crowdsec crowdsec-firewall-bouncer crowdsec"
+    INSTALLED_PKGS=""
+
+    echo "Checking for installed CrowdSec-related packages..."
+    for package in $PKG_NAMES; do
+        if pkg info "$package" > /dev/null 2>&1; then
+            PKG_VERSION=$(pkg info "$package" | grep Version | awk '{print $3}')
+            echo " - $package (version $PKG_VERSION) is installed."
+            INSTALLED_PKGS="$INSTALLED_PKGS $package"
+        fi
+    done
+
+    if [ -z "$INSTALLED_PKGS" ]; then
+        echo "No CrowdSec-related packages are installed."
+        exit 0
+    fi
+
+    echo
+    printf "Do you want to uninstall these packages? (y/N) "
+    read -r REPLY
+    if [ "$REPLY" != "y" ] && [ "$REPLY" != "Y" ]; then
+        echo "Uninstallation canceled."
+        exit 1
+    fi
+
+    # In case the service management is not behaving correctly, stop the services manually
+    terminate_services
+
+    echo "Uninstalling packages..."
+    for package in $INSTALLED_PKGS; do
+        echo "Removing $package..."
+        pkg delete -y "$package"
+    done
+
+    echo "Uninstallation complete."
+    echo "Configuration and data are left in /usr/local/etc/crowdsec and /var/db/crowdsec,"
+    echo "in case you want to reinstall or upgrade CrowdSec."
+}
+
 
 # -------------- #
 
