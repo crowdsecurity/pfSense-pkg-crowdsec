@@ -31,6 +31,9 @@ terminate_services() {
         fi
     done
 
+    service crowdsec onestop || true
+    service crowdsec_firewall onestop || true
+
     # prevent the services from starting before the plugin configures the filter tables
     rm -f /var/run/crowdsec.running /var/run/crowdsec_firewall.running
 }
