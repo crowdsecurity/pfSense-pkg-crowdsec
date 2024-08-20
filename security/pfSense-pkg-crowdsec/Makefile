@@ -3,6 +3,9 @@
 PORTNAME=	pfSense-pkg-crowdsec
 PORTVERSION=	0.1.4
 CATEGORIES=	security
+MASTER_SITES=	# empty
+DISTFILES=	# empty
+EXTRACT_ONLY=	# empty
 
 MAINTAINER=	marco@crowdsec.net
 COMMENT=	Crowdsec package for pfSense
