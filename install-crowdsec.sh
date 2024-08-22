@@ -33,9 +33,6 @@ terminate_services() {
 
     service crowdsec onestop || true
     service crowdsec_firewall onestop || true
-
-    # prevent the services from starting before the plugin configures the filter tables
-    rm -f /var/run/crowdsec.running /var/run/crowdsec_firewall.running
 }
 
 # Set variables used by get_archive
@@ -169,9 +166,13 @@ install_packages() {
 
     terminate_services
 
+    # prevent the services from starting before the plugin configures the filter tables
+    rm -f /var/run/crowdsec.running /var/run/crowdsec_firewall.running
+
     for PKG_PATH in $PKG_PATHS; do
         echo "Installing $(basename "$PKG_PATH")"
         pkg add -qf "$PKG_PATH"
+        sleep 3
     done
 
     # Clean up
@@ -233,6 +234,8 @@ uninstall_packages() {
     echo "Uninstallation complete."
     echo "Configuration and data are left in /usr/local/etc/crowdsec and /var/db/crowdsec,"
     echo "in case you want to reinstall or upgrade CrowdSec."
+
+    rm -f /var/run/crowdsec.running /var/run/crowdsec_firewall.running
 }
 
 
