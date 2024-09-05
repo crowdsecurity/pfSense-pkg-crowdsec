@@ -106,7 +106,7 @@ const CrowdSec = (function () {
   function _addFreshness(selector) {
     // this creates one timer per tab
     const freshnessTemplate =
-      '<span style="float:left;"><i>Last refresh: <span class="freshness"></span></i></span>';
+      '<span style="float:left"><i>Last refresh: <span class="freshness"></span></i></span>';
     $(selector).find('.actionBar').prepend(freshnessTemplate);
     setInterval(function () {
       _updateFreshness(selector);
@@ -120,7 +120,6 @@ const CrowdSec = (function () {
       cache: false,
       dataType: 'json',
       data: { action: action },
-      type: 'POST',
       method: 'POST',
       success: dataCallback,
       complete: function () {
@@ -727,7 +726,6 @@ const CrowdSec = (function () {
       cache: false,
       dataType: 'json',
       data: { action: 'services-status' },
-      type: 'POST',
       method: 'POST',
       success: function (data) {
         let crowdsecStatus = data['crowdsec-status'];
@@ -762,7 +760,6 @@ const CrowdSec = (function () {
       $.ajax({
         // XXX handle errors
         url: api_url + '?action=' + action + '&decision_id=' + decisionId,
-        type: 'DELETE',
         method: 'DELETE',
         dataType: 'json',
         success: function (result) {
