@@ -12,7 +12,7 @@ COMMENT=	Crowdsec package for pfSense
 
 LICENSE=	APACHE20
 
-RUN_DEPENDS=	crowdsec>=1.6.3.r3:security/crowdsec \
+RUN_DEPENDS=	crowdsec>=1.6.3:security/crowdsec \
 		crowdsec-firewall-bouncer>=0.0.28_1:security/crowdsec-firewall-bouncer
 
 NO_BUILD=	yes
