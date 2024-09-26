@@ -29,7 +29,6 @@ do-install:
 	${MKDIR} ${STAGEDIR}${PREFIX}/www/shortcuts
 	${MKDIR} ${STAGEDIR}${PREFIX}/www/crowdsec/js
 	${MKDIR} ${STAGEDIR}${PREFIX}/www/crowdsec/css
-	${MKDIR} ${STAGEDIR}${PREFIX}/www/crowdsec/images
 	${MKDIR} ${STAGEDIR}${PREFIX}/www/crowdsec/endpoint
 	${MKDIR} ${STAGEDIR}/etc/inc/priv
 	${MKDIR} ${STAGEDIR}${DATADIR}
