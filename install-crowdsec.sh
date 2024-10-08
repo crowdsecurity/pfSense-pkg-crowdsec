@@ -16,6 +16,42 @@ download() {
     fi
 }
 
+terminate_orphans() {
+    PROC_NAMES="crowdsec notification-email notification-http notification-sentinel notification-slack notification-splunk"
+    ORPHAN_PIDS=""
+
+    echo "Checking for orphan processes..."
+
+    for PROC_NAME in $PROC_NAMES; do
+        PIDS=$(pgrep -x "$PROC_NAME" || :)
+
+        if [ -n "$PIDS" ]; then
+            for PID in $PIDS; do
+                PROCESS_INFO=$(ps -p "$PID" -o pid,comm | tail -n +2)
+                echo "Found process: $PROCESS_INFO"
+                ORPHAN_PIDS="$ORPHAN_PIDS $PID"
+            done
+        fi
+    done
+
+    if [ -n "$ORPHAN_PIDS" ]; then
+        echo "Crowdsec service stopped, but the above processes are still running."
+        printf "Do you want to terminate them? (Y/n) "
+        read -r REPLY
+        if [ "$REPLY" != "n" ] && [ "$REPLY" != "N" ]; then
+            echo "Terminating processes: $ORPHAN_PIDS"
+            # shellcheck disable=SC2086
+            kill -9 $ORPHAN_PIDS || :
+            echo "done."
+        else
+            echo "Termination canceled by the user."
+        fi
+    else
+        echo "No orphan process found."
+    fi
+}
+
+
 terminate_services() {
     echo "Stopping crowdsec services..."
     PID_FILES="/var/run/crowdsec_daemon.pid /var/run/crowdsec.pid /var/run/crowdsec_firewall.pid"
@@ -33,6 +69,7 @@ terminate_services() {
 
     service crowdsec onestop || true
     service crowdsec_firewall onestop || true
+    terminate_orphans
 }
 
 # Set variables used by get_archive
