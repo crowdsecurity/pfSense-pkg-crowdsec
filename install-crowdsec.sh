@@ -35,17 +35,10 @@ terminate_orphans() {
     done
 
     if [ -n "$ORPHAN_PIDS" ]; then
-        echo "Crowdsec service stopped, but the above processes are still running."
-        printf "Do you want to terminate them? (Y/n) "
-        read -r REPLY
-        if [ "$REPLY" != "n" ] && [ "$REPLY" != "N" ]; then
-            echo "Terminating processes: $ORPHAN_PIDS"
-            # shellcheck disable=SC2086
-            kill -9 $ORPHAN_PIDS || :
-            echo "done."
-        else
-            echo "Termination canceled by the user."
-        fi
+        echo "Terminating processes: $ORPHAN_PIDS"
+        # shellcheck disable=SC2086
+        kill -9 $ORPHAN_PIDS || :
+        echo "done."
     else
         echo "No orphan process found."
     fi
