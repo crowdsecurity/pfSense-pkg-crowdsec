@@ -278,7 +278,12 @@
             <fieldname>enable_rule_v4</fieldname>
             <default_value>on</default_value>
             <type>checkbox</type>
-            <description><![CDATA[block drop {direction} {log} quick on {interfaces} inet from crowdsec_blacklists to any label "CrowdSec IPv4" tag {tag}]]></description>
+            <description>
+                <![CDATA[
+                block drop in {log} quick on {interfaces} inet from crowdsec_blacklists to any label "CrowdSec IPv4" tag {tag}
+                block drop out {log} quick on {interfaces} inet from any to crowdsec_blacklists label "CrowdSec IPv4" tag {tag}
+                ]]>
+            </description>
         </field>
         <!-- Crowdsec IPv6 blocklist settings -->
 
@@ -287,7 +292,12 @@
             <fieldname>enable_rule_v6</fieldname>
             <default_value>on</default_value>
             <type>checkbox</type>
-            <description><![CDATA[block drop {direction} {log} quick on {interfaces} inet6 from crowdsec6_blacklists to any label "CrowdSec IPv6" tag {tag}]]></description>
+            <description>
+                <![CDATA[
+                block drop in {log} quick on {interfaces} inet6 from crowdsec6_blacklists to any label "CrowdSec IPv6" tag {tag}
+                block drop out {log} quick on {interfaces} inet6 from any to crowdsec6_blacklists label "CrowdSec IPv6" tag {tag}
+                ]]>
+            </description>
         </field>
 
     </fields>
