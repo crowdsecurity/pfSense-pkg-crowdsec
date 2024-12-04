@@ -246,17 +246,6 @@
             <multiple/>
         </field>
         <field>
-            <fielddescr>Direction</fielddescr>
-            <fieldname>rules_direction</fieldname>
-            <description></description>
-            <type>select</type>
-            <options>
-                <option><name>Any (inbound + outbound)</name><value>any</value></option>
-                <option><name>In (inbound)</name><value>in</value></option>
-            </options>
-            <default_value>in</default_value>
-        </field>
-        <field>
             <fielddescr>Log</fielddescr>
             <fieldname>rules_log</fieldname>
             <type>checkbox</type>
@@ -294,8 +283,8 @@
             <type>checkbox</type>
             <description>
                 <![CDATA[
-                block drop in {log} quick on {interfaces} inet6 from crowdsec6_blacklists to any label "CrowdSec IPv6" tag {tag}
-                block drop out {log} quick on {interfaces} inet6 from any to crowdsec6_blacklists label "CrowdSec IPv6" tag {tag}
+                <p>block drop in {log} quick on {interfaces} inet6 from crowdsec6_blacklists to any label "CrowdSec IPv6" tag {tag}</p>
+                <p>block drop out {log} quick on {interfaces} inet6 from any to crowdsec6_blacklists label "CrowdSec IPv6" tag {tag}</p>
                 ]]>
             </description>
         </field>
