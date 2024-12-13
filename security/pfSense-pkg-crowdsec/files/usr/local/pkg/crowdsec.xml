@@ -257,38 +257,29 @@
             <description></description>
         </field>
         <field>
-            <fielddescr></fielddescr>
-            <fieldname>enable_rule_info</fieldname>
-            <type>info</type>
-            <description><![CDATA[The actual rules may be slightly different according to the above options. Check /var/log/system.log]]></description>
-        </field>
-        <field>
             <fielddescr>Enable CrowdSec IPv4 blocklist rule</fielddescr>
             <fieldname>enable_rule_v4</fieldname>
             <default_value>on</default_value>
             <type>checkbox</type>
-            <description>
-                <![CDATA[
-                block drop in {log} quick on {interfaces} inet from crowdsec_blacklists to any label "CrowdSec IPv4" tag {tag}
-                block drop out {log} quick on {interfaces} inet from any to crowdsec_blacklists label "CrowdSec IPv4" tag {tag}
-                ]]>
-            </description>
         </field>
-        <!-- Crowdsec IPv6 blocklist settings -->
-
         <field>
             <fielddescr>Enable CrowdSec IPv6 blocklist rule</fielddescr>
             <fieldname>enable_rule_v6</fieldname>
             <default_value>on</default_value>
             <type>checkbox</type>
-            <description>
-                <![CDATA[
-                <p>block drop in {log} quick on {interfaces} inet6 from crowdsec6_blacklists to any label "CrowdSec IPv6" tag {tag}</p>
-                <p>block drop out {log} quick on {interfaces} inet6 from any to crowdsec6_blacklists label "CrowdSec IPv6" tag {tag}</p>
-                ]]>
-            </description>
         </field>
-
+        <field>
+            <fielddescr></fielddescr>
+            <fieldname>enable_rule_info</fieldname>
+            <type>info</type>
+            <description><![CDATA[
+              The actual rules may be slightly different according to the above options, following this template:
+              <pre>block drop in {log} quick on {interfaces} inet from crowdsec_blacklists to any label "CrowdSec IPv4" tag {tag}
+block drop out {log} quick on {interfaces} inet from any to crowdsec_blacklists label "CrowdSec IPv4" tag {tag}
+block drop in {log} quick on {interfaces} inet6 from crowdsec6_blacklists to any label "CrowdSec IPv6" tag {tag}
+block drop out {log} quick on {interfaces} inet6 from any to crowdsec6_blacklists label "CrowdSec IPv6" tag {tag}</pre>
+              Check /var/log/system.log to see the exact rules that were applied.]]></description>
+        </field>
     </fields>
 
     <custom_php_install_command>
