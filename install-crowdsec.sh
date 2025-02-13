@@ -300,7 +300,7 @@ while [ $# -gt 0 ]; do
             exit 0
             ;;
         *)
-            echo "Usage: $0 [--release <version>] [--arch <architecture>] [--freebsd <version>] | [--from <tarfile>]"
+            echo "Usage: $0 [--release <version>] [--arch <architecture>] [--freebsd <version>] | [--from <tarfile>] | --uninstall"
             exit 1
             ;;
     esac

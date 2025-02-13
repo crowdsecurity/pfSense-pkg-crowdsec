@@ -87,7 +87,7 @@
             <fielddescr></fielddescr>
             <fieldname>firewall_info</fieldname>
             <type>info</type>
-            <description>Feed the blocklists to the pfSense firewall. Always required, even if you use your own firewall rules.</description>
+            <description>Feed the blocklists to the pfSense firewall. Always required, even if you use your own firewall rules. Disable only for testing.</description>
         </field>
 
         <field>
