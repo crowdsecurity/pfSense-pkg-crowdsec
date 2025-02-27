@@ -1,6 +1,10 @@
 # pfSense-pkg-crowdsec
 
-This package integrates CrowdSec in pfSense. It is not stable yet, but you are free to test from the Releases page.
+This package integrates CrowdSec in pfSense.
+
+It is not installed from the official repositories, at least not yet, but you are free to test from the Releases page.
+
+Please refer to the [detailed documentation](https://docs.crowdsec.net/docs/getting_started/install_crowdsec_pfsense/) to install or update it from a release archive.
 
 It provides a basic UI with settings to configure the Security Engine and the Firewall Remediation Component (bouncer).
 
