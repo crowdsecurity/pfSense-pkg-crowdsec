@@ -75,6 +75,9 @@ set_vars() {
 
     if [ "$(uname -s)" = "FreeBSD" ]; then
         DETECTED_ARCH=$(uname -m)
+        if [ "$DETECTED_ARCH" = "arm64" ]; then
+            DETECTED_ARCH="aarch64"
+        fi
         DETECTED_FREEBSD_VERSION=$(uname -r | cut -d- -f1 | cut -d. -f1)
     else
         DETECTED_ARCH=
