@@ -170,8 +170,15 @@ install_packages() {
     echo "Extracting archive to $TMP_DIR"
     tar -xzf "$TARFILE" -C "$TMP_DIR"
 
+    # Versions that are distributed with dynamically linked abseil/re2 are not recommended to avoid dependency issues
+    if find "$TMP_DIR" -name "abseil-[0-9]*.pkg" | grep -q .; then
+        echo "Error: This archive contains an 'abseil' package. Installing it could replace the pfSense-managed abseil and break dependencies."
+        echo "Please use a CrowdSec build >= 1.6.11 that does not bundle abseil."
+        exit 1
+    fi
+
     # Install the packages in order to respect the dependencies
-    PKG_NAMES="abseil re2 crowdsec-firewall-bouncer crowdsec pfSense-pkg-crowdsec"
+    PKG_NAMES="crowdsec-firewall-bouncer crowdsec pfSense-pkg-crowdsec"
 
     echo
     echo "The following packages are ready for installation:"
@@ -213,7 +220,7 @@ install_packages() {
 
     echo "# -------------- #"
     echo "Installation complete."
-    echo "You can configure and activate CrowdSec on you pfSense admin page (Package / Services: CrowdSec)."
+    echo "You can configure and activate CrowdSec on your pfSense admin page (Package / Services: CrowdSec)."
 }
 
 
@@ -271,6 +278,37 @@ uninstall_packages() {
     rm -f /var/run/crowdsec.running /var/run/crowdsec_firewall.running
 }
 
+check_deps() {
+    echo "Checking pfSense package dependencies..."
+    if ! (pkg check -da pfSense 2>/dev/null | grep abseil); then
+        echo "done."
+        return
+    fi
+
+    echo "------------------------------------------------------------"
+    echo "This system likely has conflicting libraries from a previous"
+    echo "CrowdSec installation. The 'abseil' library is provided and"
+    echo "managed by pfSense, while older CrowdSec packages shipped an"
+    echo "incompatible copy."
+    echo
+    echo "To avoid breaking pfSense or removing base packages, this script"
+    echo "can restore pfSense-managed dependencies by running:"
+    echo "  pkg install -yf pfSense"
+    echo
+    echo "This returns the system to a clean, supported state before"
+    echo "installing CrowdSec. Recent CrowdSec versions (as of Aug 20, 2025)"
+    echo "no longer ship conflicting libraries, and this script refuses"
+    echo "to install the older builds."
+    echo "------------------------------------------------------------"
+    echo
+
+    printf "Fix dependencies now? This may remove crowdsec (you can safely reinstall it). (Y/n) "
+    read -r REPLY
+    if [ "$REPLY" = "" ] || [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
+        echo "fixing dependencies..."
+        pkg install -yf pfSense
+    fi
+}
 
 # -------------- #
 
@@ -278,6 +316,10 @@ RELEASE_TAG=""
 ARCH=""
 FREEBSD_VERSION=""
 TARFILE=""
+
+
+check_deps
+
 
 while [ $# -gt 0 ]; do
     case "$1" in
