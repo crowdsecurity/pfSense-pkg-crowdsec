@@ -65,7 +65,9 @@ $crowdsec_aliases = array(
  */
 function crowdsec_config_migrate()
 {
-    parse_config(true);
+    if (function_exists('parse_config')) {
+        parse_config(true);
+    }
     $cf = config_get_path('installedpackages/crowdsec/config/0', []);
 
     // noop on fresh install
@@ -157,7 +159,9 @@ function crowdsec_install()
     mwexec('sysrc -f /usr/local/etc/rc.conf.d/crowdsec crowdsec_machine_name=pfsense');
     mwexec('sysrc -f /usr/local/etc/rc.conf.d/crowdsec_firewall crowdsec_firewall_name=pfsense-firewall');
     // UPDATE pfSense ALIAS TABLES
-    parse_config(true);
+    if (function_exists('parse_config')) {
+        parse_config(true);
+    }
     config_init_path(implode('/', ['aliases']));
     $exist_aliases = config_get_path('aliases/alias', []);
     $exist_aliases_names = array_column($exist_aliases, 'name');
@@ -224,7 +228,9 @@ function crowdsec_deinstall()
     // Delete aliases
     global $crowdsec_aliases;
     $delete_flag = false;
-    parse_config(true);
+    if (function_exists('parse_config')) {
+        parse_config(true);
+    }
     foreach ($crowdsec_aliases as $crowdsec_alias) {
         $crowdsec_index = get_alias_index($crowdsec_alias['name']);
         if ($crowdsec_index !== -1) {
