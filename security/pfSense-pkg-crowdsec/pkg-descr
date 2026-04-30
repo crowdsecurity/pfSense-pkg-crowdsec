@@ -8,6 +8,10 @@ WWW: https://docs.crowdsec.net/docs/next/getting_started/install_crowdsec_pfsens
 Package Changelog
 =================
 
+0.1.7
+
+ * protect against deprecation of php parse_config function
+
 0.1.6
 
  * fix expiration parsing / display
