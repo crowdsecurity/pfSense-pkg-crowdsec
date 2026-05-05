@@ -562,6 +562,30 @@ EOF;
 }
 
 /**
+ * Restore pf table contents from an in-memory snapshot.
+ * Registered as a shutdown function so it runs after pfctl has flushed and
+ * reloaded the ruleset (which empties alias-based tables like crowdsec_blacklists).
+ * Keeping the snapshot in memory avoids the TOCTOU race that a /tmp file would
+ * introduce (world-writable directory, attacker could add/remove entries).
+ *
+ * @param array $snapshots map of table name => array of IP strings
+ * @return void
+ */
+function crowdsec_restore_tables_on_shutdown(array $snapshots)
+{
+    foreach ($snapshots as $name => $ips) {
+        if (empty($ips)) {
+            continue;
+        }
+        $proc = popen("/sbin/pfctl -t " . escapeshellarg($name) . " -T add -", "w");
+        if ($proc !== false) {
+            fwrite($proc, implode("\n", $ips) . "\n");
+            pclose($proc);
+        }
+    }
+}
+
+/**
  * filter_rules_needed hook (install, setting edition, ...)
  *
  * @param $type
@@ -572,6 +596,24 @@ function crowdsec_generate_rules($type)
     $rules = "";
     switch ($type) {
         case 'pfearly':
+            // Snapshot the current pf table contents in memory before pfctl
+            // flushes them when loading the new ruleset.  A shutdown function
+            // restores the snapshot afterward via popen, avoiding both a full
+            // bouncer restart and any file-based TOCTOU race (issue #123).
+            global $crowdsec_aliases;
+            static $shutdown_registered = false;
+            $snapshots = [];
+            foreach ($crowdsec_aliases as $alias) {
+                $name = $alias['name'];
+                $ips = [];
+                exec("/sbin/pfctl -t " . escapeshellarg($name) . " -T show 2>/dev/null", $ips);
+                $snapshots[$name] = array_filter(array_map('trim', $ips));
+            }
+            if (!$shutdown_registered) {
+                register_shutdown_function('crowdsec_restore_tables_on_shutdown', $snapshots);
+                $shutdown_registered = true;
+            }
+
             global $config;
             $cf = $config['installedpackages']['crowdsec']['config'][0] ?? array();
             $log = !empty($cf['rules_log']) ? "log" : '';
