@@ -199,6 +199,27 @@ function crowdsec_install()
         $crowdsec_conf['db_config']['use_wal'] = true;
         set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
     }
+    // On a fresh install no user config exists yet, so crowdsec_resync_config()
+    // would return early and services would never start — not even after a
+    // reboot, because the rc.d wrapper scripts also read config.xml.
+    // Write the package defaults so that resync (and future boots) work.
+    if (!config_get_path('installedpackages/crowdsec/config/0', [])) {
+        config_set_path('installedpackages/crowdsec/config/0', [
+            'enable_fw_bouncer'           => 'on',
+            'enable_agent'                => 'on',
+            'enable_lapi'                 => 'on',
+            'lapi_host'                   => '127.0.0.1',
+            'lapi_port'                   => '8088',
+            'agent_log_level'             => 'info',
+            'firewall_bouncer_log_level'  => 'info',
+            'metrics_port'                => '6060',
+            'rules_all_interfaces'        => 'on',
+            'enable_rule_v4'              => 'on',
+            'enable_rule_v6'              => 'on',
+        ]);
+        write_config('pfsense_crowdsec: write defaults on first install');
+    }
+    crowdsec_resync_config();
 }
 
 /**
