@@ -145,6 +145,40 @@ function crowdsec_validate_form($post, &$input_errors)
 }
 
 /**
+ * Ensure CrowdSec pfSense aliases exist in the main config.
+ *
+ * @return bool True when aliases were added.
+ */
+function crowdsec_ensure_aliases()
+{
+    global $crowdsec_aliases;
+
+    if (function_exists('parse_config')) {
+        parse_config(true);
+    }
+
+    config_init_path(implode('/', ['aliases']));
+    $existing_aliases = config_get_path('aliases/alias', []);
+    $existing_alias_names = array_column($existing_aliases, 'name');
+    $final_aliases = $existing_aliases;
+
+    foreach ($crowdsec_aliases as $crowdsec_alias) {
+        if (!in_array($crowdsec_alias['name'], $existing_alias_names, true)) {
+            $final_aliases[] = $crowdsec_alias;
+        }
+    }
+
+    if ($existing_aliases === $final_aliases) {
+        return false;
+    }
+
+    config_set_path('aliases/alias', $final_aliases);
+    write_config('pfsense_crowdsec: saving aliases');
+
+    return true;
+}
+
+/**
  * custom_php_install_command hook (package installation)
  *
  * @return void
@@ -159,25 +193,7 @@ function crowdsec_install()
     mwexec('sysrc -f /usr/local/etc/rc.conf.d/crowdsec crowdsec_machine_name=pfsense');
     mwexec('sysrc -f /usr/local/etc/rc.conf.d/crowdsec_firewall crowdsec_firewall_name=pfsense-firewall');
     // UPDATE pfSense ALIAS TABLES
-    if (function_exists('parse_config')) {
-        parse_config(true);
-    }
-    config_init_path(implode('/', ['aliases']));
-    $exist_aliases = config_get_path('aliases/alias', []);
-    $exist_aliases_names = array_column($exist_aliases, 'name');
-    $final_aliases = $exist_aliases;
-    // Add Crowdsec alias if not exist
-    foreach ($crowdsec_aliases as $crowdsec_alias) {
-        if (!in_array($crowdsec_alias['name'], $exist_aliases_names)) {
-            $final_aliases[] = $crowdsec_alias;
-        }
-    }
-    // Update config.xml, if changes required
-    if ($exist_aliases !== $final_aliases) {
-        config_set_path('aliases/alias', $final_aliases);
-        write_config('pfsense_crowdsec: saving Aliases');
-    }
-    unset($final_aliases, $exist_aliases);
+    crowdsec_ensure_aliases();
     // Update rules
     crowdsec_generate_rules('pfearly');
     filter_configure();
@@ -321,6 +337,8 @@ function crowdsec_resync_config()
     if (!$cf) {
         return;
     }
+
+    crowdsec_ensure_aliases();
 
     // Init some flags to handle services management
     $should_use_crowdsec = false;
@@ -565,6 +583,30 @@ EOF;
 }
 
 /**
+ * Restore pf table contents from an in-memory snapshot.
+ * Registered as a shutdown function so it runs after pfctl has flushed and
+ * reloaded the ruleset (which empties alias-based tables like crowdsec_blacklists).
+ * Keeping the snapshot in memory avoids the TOCTOU race that a /tmp file would
+ * introduce (world-writable directory, attacker could add/remove entries).
+ *
+ * @param array $snapshots map of table name => array of IP strings
+ * @return void
+ */
+function crowdsec_restore_tables_on_shutdown(array $snapshots)
+{
+    foreach ($snapshots as $name => $ips) {
+        if (empty($ips)) {
+            continue;
+        }
+        $proc = popen("/sbin/pfctl -t " . escapeshellarg($name) . " -T add -", "w");
+        if ($proc !== false) {
+            fwrite($proc, implode("\n", $ips) . "\n");
+            pclose($proc);
+        }
+    }
+}
+
+/**
  * filter_rules_needed hook (install, setting edition, ...)
  *
  * @param $type
@@ -575,6 +617,24 @@ function crowdsec_generate_rules($type)
     $rules = "";
     switch ($type) {
         case 'pfearly':
+            // Snapshot the current pf table contents in memory before pfctl
+            // flushes them when loading the new ruleset.  A shutdown function
+            // restores the snapshot afterward via popen, avoiding both a full
+            // bouncer restart and any file-based TOCTOU race (issue #123).
+            global $crowdsec_aliases;
+            static $shutdown_registered = false;
+            $snapshots = [];
+            foreach ($crowdsec_aliases as $alias) {
+                $name = $alias['name'];
+                $ips = [];
+                exec("/sbin/pfctl -t " . escapeshellarg($name) . " -T show 2>/dev/null", $ips);
+                $snapshots[$name] = array_filter(array_map('trim', $ips));
+            }
+            if (!$shutdown_registered) {
+                register_shutdown_function('crowdsec_restore_tables_on_shutdown', $snapshots);
+                $shutdown_registered = true;
+            }
+
             global $config;
             $cf = $config['installedpackages']['crowdsec']['config'][0] ?? array();
             $log = !empty($cf['rules_log']) ? "log" : '';
@@ -648,4 +708,3 @@ function crowdsec_generate_rules($type)
 
     return $rules;
 }
-
