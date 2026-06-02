@@ -209,7 +209,7 @@ function crowdsec_install()
             'enable_agent'                => 'on',
             'enable_lapi'                 => 'on',
             'lapi_host'                   => '127.0.0.1',
-            'lapi_port'                   => '8088',
+            'lapi_port'                   => '8080',
             'agent_log_level'             => 'info',
             'firewall_bouncer_log_level'  => 'info',
             'metrics_port'                => '6060',
