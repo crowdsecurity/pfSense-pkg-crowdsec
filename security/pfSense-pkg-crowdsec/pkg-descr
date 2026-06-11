@@ -8,6 +8,13 @@ WWW: https://docs.crowdsec.net/docs/next/getting_started/install_crowdsec_pfsens
 Package Changelog
 =================
 
+0.1.8
+
+ * ensure alias exists when pfsense flushes its time-based rules
+ * write package defaults to config.xml at the end of crowdsec_install(), so
+   crowdsec_resync_config() runs fully on first install and rc.d wrappers find
+   the expected settings on every subsequent boot
+
 0.1.7
 
  * protect against deprecation of php parse_config function
