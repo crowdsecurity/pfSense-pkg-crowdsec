@@ -586,7 +586,10 @@ EOF;
  * Restore pf table contents from an in-memory snapshot.
  * Registered as a shutdown function so it runs after pfctl has flushed and
  * reloaded the ruleset (which empties alias-based tables like crowdsec_blacklists).
- * IPs are passed as shell arguments; pfctl -T add does not read from stdin on FreeBSD 16.
+ * IPs are fed to xargs via stdin, which batches them into pfctl -T add calls that
+ * each stay within ARG_MAX. Passing IPs directly as shell arguments fails with
+ * "Argument list too long" for large decision lists (ARG_MAX is 512KB on FreeBSD 16,
+ * easily exceeded at ~100k IPs). pfctl -T add does not read from stdin on FreeBSD 16.
  *
  * @param array $snapshots map of table name => array of IP strings
  * @return void
@@ -597,8 +600,11 @@ function crowdsec_restore_tables_on_shutdown(array $snapshots)
         if (empty($ips)) {
             continue;
         }
-        $args = implode(' ', array_map('escapeshellarg', $ips));
-        mwexec("/sbin/pfctl -t " . escapeshellarg($name) . " -T add " . $args);
+        $proc = popen("/usr/bin/xargs /sbin/pfctl -t " . escapeshellarg($name) . " -T add", "w");
+        if ($proc !== false) {
+            fwrite($proc, implode("\n", $ips) . "\n");
+            pclose($proc);
+        }
     }
 }
 
