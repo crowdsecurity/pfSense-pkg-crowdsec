@@ -586,8 +586,7 @@ EOF;
  * Restore pf table contents from an in-memory snapshot.
  * Registered as a shutdown function so it runs after pfctl has flushed and
  * reloaded the ruleset (which empties alias-based tables like crowdsec_blacklists).
- * Keeping the snapshot in memory avoids the TOCTOU race that a /tmp file would
- * introduce (world-writable directory, attacker could add/remove entries).
+ * IPs are passed as shell arguments; pfctl -T add does not read from stdin on FreeBSD 16.
  *
  * @param array $snapshots map of table name => array of IP strings
  * @return void
@@ -598,11 +597,8 @@ function crowdsec_restore_tables_on_shutdown(array $snapshots)
         if (empty($ips)) {
             continue;
         }
-        $proc = popen("/sbin/pfctl -t " . escapeshellarg($name) . " -T add -", "w");
-        if ($proc !== false) {
-            fwrite($proc, implode("\n", $ips) . "\n");
-            pclose($proc);
-        }
+        $args = implode(' ', array_map('escapeshellarg', $ips));
+        mwexec("/sbin/pfctl -t " . escapeshellarg($name) . " -T add " . $args);
     }
 }
 
