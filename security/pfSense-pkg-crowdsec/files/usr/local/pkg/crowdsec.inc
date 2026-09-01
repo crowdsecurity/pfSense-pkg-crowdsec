@@ -379,13 +379,11 @@ function crowdsec_resync_config()
         set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
 
         /**
-         * Machine and bouncer will be created (and registered) again on next service start; so we delete them here.
-         * @see /usr/local/etc/rc.d/crowdsec
+         * The bouncer will be created (and registered) again on next service start; so we delete it here.
          * @see /usr/local/etc/rc.d/crowdsec_firewall
          */
-        // there is no --force option, we ignore errors if the machine or bouncer don't exist
+        // there is no --force option, we ignore errors if the bouncer doesn't exist
         mwexec('cscli bouncers delete pfsense-firewall --ignore-missing');
-        mwexec('cscli machines delete pfsense --ignore-missing');
     } else { // Handle Remote LAPI ON (e.g. LAPI OFF)
         // Modify Agent yaml config
         if (!empty($crowdsec_conf)) {
