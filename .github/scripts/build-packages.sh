@@ -160,7 +160,12 @@ EOT
     echo "::endgroup::"
 
     echo "::group::Build amd64 packages"
-    poudriere bulk -j "$JAIL" -p "$PTREE" -O crowdsec -O pfsense security/pfSense-pkg-crowdsec
+    # a second pass reuses what was built and retries what failed: the go module
+    # downloads (proxy.golang.org) occasionally fail with transient errors
+    _bulk() {
+        poudriere bulk -j "$JAIL" -p "$PTREE" -O crowdsec -O pfsense security/pfSense-pkg-crowdsec
+    }
+    _bulk || { echo "poudriere bulk failed, retrying once"; _bulk; }
     echo "::endgroup::"
 
     # All is a symlink to .latest/All (poudriere commits atomically)
@@ -295,6 +300,17 @@ EOT
             DISTDIR="$DISTDIR" BATCH=yes install-missing-packages
         make -C "$_portdir" PORTSDIR="$PORTS_DIR" __MAKE_CONF="$_dir/make.conf" \
             -V ARCH -V OSVERSION -V CC -V GO_ENV
+        # the go module downloads (proxy.golang.org) occasionally fail with
+        # transient errors: retry them before building
+        _n=1
+        until make -C "$_portdir" PORTSDIR="$PORTS_DIR" __MAKE_CONF="$_dir/make.conf" fetch \
+                > "$LOGS_DIR/cross-$_arch-$(basename "$_port")-fetch.log" 2>&1; do
+            tail -n 20 "$LOGS_DIR/cross-$_arch-$(basename "$_port")-fetch.log" >&2
+            [ "$_n" -ge 3 ] && return 1
+            _n=$((_n + 1))
+            echo "fetch failed, attempt $_n/3 in 30s"
+            sleep 30
+        done
         make -C "$_portdir" PORTSDIR="$PORTS_DIR" __MAKE_CONF="$_dir/make.conf" package \
             > "$LOGS_DIR/cross-$_arch-$(basename "$_port").log" 2>&1 \
             || { tail -n 80 "$LOGS_DIR/cross-$_arch-$(basename "$_port").log" >&2; return 1; }
