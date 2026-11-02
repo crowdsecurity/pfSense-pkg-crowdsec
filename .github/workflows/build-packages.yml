@@ -6,8 +6,8 @@ name: Build packages
 #
 # - prerelease published: all archives are built from the release tag and
 #   attached to that release
-# - manual run: archives are uploaded as workflow artifacts; the "arch" input
-#   restricts which archives are produced
+# - pull request / manual run: archives are uploaded as workflow artifacts; the "arch" input
+#   (manual runs only) restricts which archives are produced
 #
 # Everything runs in amd64 VMs: amd64 with poudriere, arm64 and armv7
 # cross-compiled (native Go and clang, cgo for mattn sqlite) against a sysroot
@@ -16,6 +16,11 @@ name: Build packages
 on:
   release:
     types: [prereleased]
+  pull_request:
+    paths:
+      - '.github/workflows/build-packages.yml'
+      - '.github/scripts/build-packages.sh'
+      - 'security/**'
   workflow_dispatch:
     inputs:
       arch:
