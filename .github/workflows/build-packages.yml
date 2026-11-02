@@ -1,0 +1,166 @@
+name: Build packages
+
+# Builds crowdsec, crowdsec-firewall-bouncer and pfSense-pkg-crowdsec for
+# every supported FreeBSD version / architecture, using the ports from
+# crowdsecurity/packaging-freebsd (pfSense branch) as an overlay.
+#
+# - pull requests / manual runs: archives are uploaded as workflow artifacts
+# - tags v*: archives are also attached to a draft GitHub release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    paths:
+      - 'security/**'
+      - '.github/workflows/build-packages.yml'
+      - '.github/scripts/build-packages.sh'
+  workflow_dispatch:
+    inputs:
+      packaging_ref:
+        description: 'Branch/tag of crowdsecurity/packaging-freebsd'
+        default: 'crowdsec-wasm'
+        required: true
+      ports_branch:
+        description: 'Branch of the FreeBSD ports tree'
+        default: 'main'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # the special pfSense branch: crowdsec built with WebAssembly re2, no abseil
+  PACKAGING_REF: ${{ inputs.packaging_ref || 'crowdsec-wasm' }}
+  PORTS_BRANCH: ${{ inputs.ports_branch || 'main' }}
+
+jobs:
+  build:
+    name: FreeBSD ${{ matrix.freebsd.major }} ${{ matrix.arch.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        freebsd:
+          # release: VM image (vmactions/freebsd-vm). The host kernel should be >= the jail.
+          # version: "poudriere jail -v"
+          # method:  "poudriere jail -m", with an explicit pkgbase repository
+          #          (the default can select the wrong base repository for armv7)
+          # major:   used in the archive name, as expected by install-crowdsec.sh
+          - { release: '14.5', version: '14', method: 'pkgbase=base_release_5', major: '14' }
+          - { release: '15.1', version: '15', method: 'pkgbase=base_release_1', major: '15' }
+          # vmactions has no 16.0 image yet (still CURRENT): build the 16 jail on the
+          # newest available host. Poudriere warns that the jail is newer than the kernel.
+          # Switch release to '16.0' as soon as vmactions publishes it.
+          - { release: '15.1', version: '16', method: 'pkgbase=base_latest', major: '16' }
+        arch:
+          # vm:    vmactions arch (empty = x86_64). armv7 is built on arm64 (native 32-bit compat, no qemu-user).
+          #        aarch64 VMs are fully emulated on the x86 runner (recommended by vmactions
+          #        over ubuntu-24.04-arm), so these jobs are slow.
+          # jail:  "poudriere jail -a"
+          # asset: architecture in the archive name (uname -m, arm64 -> aarch64)
+          - { name: amd64, vm: '', jail: amd64, asset: amd64 }
+          - { name: arm64, vm: aarch64, jail: arm64.aarch64, asset: aarch64 }
+          - { name: armv7, vm: aarch64, jail: armv7, asset: armv7 }
+
+    env:
+      JAIL_VERSION: ${{ matrix.freebsd.version }}
+      JAIL_METHOD: ${{ matrix.freebsd.method }}
+      JAIL_URL: pkg+https://pkg.freebsd.org
+      JAIL_ARCH: ${{ matrix.arch.jail }}
+      ARCHIVE: freebsd-${{ matrix.freebsd.major }}-${{ matrix.arch.asset }}.tar
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build in FreeBSD ${{ matrix.freebsd.release }} ${{ matrix.arch.vm || 'x86_64' }} VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: ${{ matrix.freebsd.release }}
+          arch: ${{ matrix.arch.vm }}
+          usesh: true
+          mem: 12288
+          envs: 'PACKAGING_REF PORTS_BRANCH ARCHIVE JAIL_VERSION JAIL_METHOD JAIL_URL JAIL_ARCH'
+          prepare: |
+            pkg install -y git-lite poudriere-devel
+          # don't fail here: the VM only copies files back on success,
+          # and we want the poudriere logs in any case
+          run: |
+            sh .github/scripts/build-packages.sh || touch build-failed
+
+      - name: Upload poudriere logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.freebsd.major }}-${{ matrix.arch.asset }}
+          path: poudriere-logs/
+          if-no-files-found: ignore
+
+      - name: Check build result
+        run: |
+          if [ -e build-failed ] || [ ! -s "$ARCHIVE" ]; then
+            echo "::error::build failed for $ARCHIVE, see the logs artifact"
+            exit 1
+          fi
+          tar -tvf "$ARCHIVE"
+
+      - name: Upload archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARCHIVE }}
+          path: ${{ env.ARCHIVE }}
+          if-no-files-found: error
+
+  release:
+    name: Draft release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: freebsd-*.tar
+          path: dist
+          merge-multiple: true
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -eu
+          ls -l dist
+          # versions, taken from the package file names
+          content=$(tar -tf dist/freebsd-15-amd64.tar)
+          ver() { echo "$content" | sed -n "s/^$1-\([0-9][^-]*\)\.pkg$/\1/p"; }
+          plugin=$(ver pfSense-pkg-crowdsec)
+          crowdsec=$(ver crowdsec)
+          bouncer=$(ver crowdsec-firewall-bouncer)
+
+          cat > notes.md <<EOT
+          Install with
+
+          \`\`\`
+          # fetch https://raw.githubusercontent.com/${GH_REPO}/refs/heads/main/install-crowdsec.sh
+          # sh install-crowdsec.sh --release ${TAG}
+          \`\`\`
+
+          Without a --release option, the script will install the latest stable (i.e non pre-release) version.
+
+          Built from crowdsecurity/packaging-freebsd@${PACKAGING_REF}, FreeBSD ports ${PORTS_BRANCH}.
+          EOT
+
+          gh release create "$TAG" dist/*.tar \
+            --draft \
+            --verify-tag \
+            --title "v${plugin} w/ crowdsec ${crowdsec} and bouncer ${bouncer}" \
+            --notes-file notes.md
