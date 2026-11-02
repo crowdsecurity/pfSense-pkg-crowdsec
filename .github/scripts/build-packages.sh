@@ -248,7 +248,8 @@ EOT
     # use the GNU ld of the host's binutils package for the target, found by
     # clang through -B
     pkg install -y "$_binutils"
-    _bfd=$(pkg info -l "$_binutils" | awk '$1 ~ /[/-]ld\.bfd$/ {print $1; exit}')
+    # either <prefix>/<target>/bin/ld.bfd or <prefix>/bin/<target>-ld.bfd
+    _bfd=$(pkg info -l "$_binutils" | grep -E '(/|-)ld\.bfd$' | head -n 1 | tr -d '[:space:]')
     test -x "$_bfd"
     ln -sf "$_bfd" "$_dir/bin/ld.bfd"
     "$_dir/bin/ld.bfd" --version | head -n 1
