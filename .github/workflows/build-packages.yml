@@ -86,7 +86,7 @@ jobs:
       TARGET: amd64
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build in FreeBSD ${{ matrix.freebsd.release }} VM
         uses: vmactions/freebsd-vm@v1
@@ -104,7 +104,7 @@ jobs:
 
       - name: Upload build logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: logs-${{ matrix.freebsd.major }}-amd64
           path: build-logs/
@@ -121,7 +121,7 @@ jobs:
 
       # needed by the arm jobs, whatever the selection
       - name: Upload pfSense-pkg-crowdsec
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: plugin-${{ matrix.freebsd.major }}
           path: plugin/*.pkg
@@ -129,7 +129,7 @@ jobs:
 
       - name: Upload archive
         if: env.WANTED_ARCH == 'all' || env.WANTED_ARCH == 'amd64'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: packages-${{ matrix.freebsd.major }}-amd64
           path: out/freebsd-*.tar
@@ -156,10 +156,10 @@ jobs:
       TARGET: ${{ matrix.arch.name }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Get pfSense-pkg-crowdsec from the amd64 build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: plugin-${{ matrix.freebsd.major }}
           path: plugin
@@ -180,7 +180,7 @@ jobs:
 
       - name: Upload build logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: logs-${{ matrix.freebsd.major }}-${{ matrix.arch.asset }}
           path: build-logs/
@@ -196,7 +196,7 @@ jobs:
           tar -tvf "$f"
 
       - name: Upload archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: packages-${{ matrix.freebsd.major }}-${{ matrix.arch.asset }}
           path: out/freebsd-*.tar
@@ -210,7 +210,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: packages-*
           path: dist
