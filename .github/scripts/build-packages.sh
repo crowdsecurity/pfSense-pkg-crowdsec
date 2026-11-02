@@ -1,53 +1,65 @@
 #!/bin/sh
 #
-# Build crowdsec, crowdsec-firewall-bouncer and pfSense-pkg-crowdsec with
-# poudriere, for one FreeBSD version / architecture, and pack them in a tar
-# archive with the layout expected by install-crowdsec.sh.
+# Build crowdsec, crowdsec-firewall-bouncer and pfSense-pkg-crowdsec for one
+# FreeBSD major version, for amd64, arm64 and armv7, on an amd64 host.
 #
-# Must run as root on a FreeBSD host that can execute the jail binaries
-# natively: amd64 jails on amd64, arm64 and armv7 jails on arm64 (32-bit
-# compat). The host kernel should also be >= the jail version.
+# - amd64: poudriere bulk in a pkgbase jail (also produces pfSense-pkg-crowdsec,
+#   which is NO_ARCH and shipped in every archive)
+# - arm64 / armv7: cross-compiled with the ports framework (CROSS_TOOLCHAIN +
+#   CROSS_SYSROOT): native amd64 Go and clang, cgo enabled (mattn sqlite),
+#   against a sysroot installed from the target's pkgbase repository.
+#
+# Each architecture ends up in out/freebsd-<major>-<arch>.tar (plain tar, flat
+# layout), as expected by install-crowdsec.sh.
+#
+# Must run as root on an amd64 FreeBSD host. The host kernel should be >= the
+# target version for the amd64 jail.
 #
 # environment:
-#   JAIL_VERSION    poudriere jail -v        (e.g. 14, 15, 16)
-#   JAIL_METHOD     poudriere jail -m        (e.g. pkgbase=base_release_5, pkgbase=base_latest)
-#   JAIL_URL        poudriere jail -U        (default: pkg+https://pkg.freebsd.org)
-#   JAIL_ARCH       poudriere jail -a        (amd64 | arm64.aarch64 | armv7)
-#   ARCHIVE         output tar file
-#   PACKAGING_REPO  crowdsec ports overlay   (default: crowdsecurity/packaging-freebsd)
-#   PACKAGING_REF   branch of the overlay    (default: crowdsec-wasm)
-#   PORTS_REPO      FreeBSD ports tree       (default: github mirror of freebsd-ports)
-#   PORTS_BRANCH    branch of the ports tree (default: main)
-#   LOGS_DIR        where to copy poudriere logs (default: ./poudriere-logs)
+#   FREEBSD_MAJOR   target FreeBSD major version  (14, 15, 16)
+#   BASE_REPO       pkgbase repository             (base_release_5, base_release_1, base_latest)
+#   ARCHES          architectures to package       (default: "amd64 arm64 armv7")
+#   PKG_URL         package mirror                 (default: pkg+https://pkg.freebsd.org)
+#   OUT_DIR         output directory               (default: ./out)
+#   PACKAGING_REPO  crowdsec ports overlay         (default: crowdsecurity/packaging-freebsd)
+#   PACKAGING_REF   branch of the overlay          (default: crowdsec-wasm)
+#   PORTS_REPO      FreeBSD ports tree             (default: github mirror of freebsd-ports)
+#   PORTS_BRANCH    branch of the ports tree       (default: main)
+#   LOGS_DIR        where to copy the build logs   (default: ./build-logs)
 
 set -eu
 
-: "${JAIL_VERSION:?}" "${JAIL_METHOD:?}" "${JAIL_ARCH:?}" "${ARCHIVE:?}"
-JAIL_URL=${JAIL_URL:-pkg+https://pkg.freebsd.org}
-
-case "$ARCHIVE" in
-    /*) OUTPUT=$ARCHIVE ;;
-    *) OUTPUT=$(pwd)/$ARCHIVE ;;
-esac
+: "${FREEBSD_MAJOR:?}" "${BASE_REPO:?}"
+# never wait for a confirmation
+export ASSUME_ALWAYS_YES=yes
+ARCHES=${ARCHES:-amd64 arm64 armv7}
+PKG_URL=${PKG_URL:-pkg+https://pkg.freebsd.org}
+OUT_DIR=$(mkdir -p "${OUT_DIR:-out}" && cd "${OUT_DIR:-out}" && pwd)
+LOGS_DIR=$(mkdir -p "${LOGS_DIR:-build-logs}" && cd "${LOGS_DIR:-build-logs}" && pwd)
 
 PACKAGING_REPO=${PACKAGING_REPO:-https://github.com/crowdsecurity/packaging-freebsd.git}
 PACKAGING_REF=${PACKAGING_REF:-crowdsec-wasm}
 PORTS_REPO=${PORTS_REPO:-https://github.com/freebsd/freebsd-ports.git}
 PORTS_BRANCH=${PORTS_BRANCH:-main}
-LOGS_DIR=${LOGS_DIR:-$(pwd)/poudriere-logs}
 
 # this repository is itself a ports overlay (security/pfSense-pkg-crowdsec)
 OVERLAY_DIR=$(cd "$(dirname "$0")/../.." && pwd)
 
 BASEFS=/usr/local/poudriere
-JAIL=$(echo "j${JAIL_VERSION}_${JAIL_ARCH}" | tr -c 'A-Za-z0-9\n' '_')
+JAIL=j${FREEBSD_MAJOR}_amd64
 PTREE=freebsd
+# poudriere puts the git ports trees here, the cross builds reuse them
+PORTS_DIR=$BASEFS/ports/$PTREE
+CROWDSEC_PORTS_DIR=$BASEFS/ports/crowdsec
+DISTDIR=/usr/ports/distfiles
+CROSS_BASE=/usr/local/cross
 
 # packages built from our overlays, never fetch them from pkg.FreeBSD.org
 OWN_PACKAGES="crowdsec-firewall-bouncer crowdsec pfSense-pkg-crowdsec"
+# the architecture-specific ones, cross-compiled for arm
+CROSS_PORTS="security/crowdsec-firewall-bouncer security/crowdsec"
 
 collect_logs() {
-    mkdir -p "$LOGS_DIR"
     if [ -d "$BASEFS/data/logs/bulk" ]; then
         # follow the "latest" symlinks, keep only per-port logs
         find -L "$BASEFS/data/logs/bulk" -path '*/latest/logs/*' -name '*.log' \
@@ -56,35 +68,85 @@ collect_logs() {
 }
 trap collect_logs EXIT
 
+# find exactly one <name>-<version>.pkg in a directory (following symlinks)
+find_pkg() {
+    _found=$(find -L "$1" -maxdepth 1 -name "$2-[0-9]*.pkg")
+    if [ "$(echo "$_found" | grep -c .)" -ne 1 ]; then
+        echo "Error: expected exactly one package for $2 in $1, found: '$_found'" >&2
+        return 1
+    fi
+    echo "$_found"
+}
+
+# make_archive <asset arch> <expected ABI> <crowdsec.pkg> <bouncer.pkg> <pfSense-pkg.pkg>
+make_archive() {
+    _asset=$1 _abi=$2
+    shift 2
+    _archive="$OUT_DIR/freebsd-$FREEBSD_MAJOR-$_asset.tar"
+    echo "::group::Create $_archive"
+
+    _crowdsec=$1
+    for _p in "$@"; do
+        printf '%-45s %s\n' "$(basename "$_p")" "$(pkg query -F "$_p" '%q')"
+    done
+
+    # the binaries must be for the target, the packages labelled accordingly
+    for _p in "$1" "$2"; do
+        _q=$(pkg query -F "$_p" '%q')
+        if [ "$_q" != "$_abi" ]; then
+            echo "Error: $(basename "$_p") is for $_q, expected $_abi" >&2
+            return 1
+        fi
+    done
+    _bin=$(tar -tf "$_crowdsec" | grep '/bin/crowdsec$')
+    tar -xOf "$_crowdsec" "$_bin" | file -
+
+    # pfSense manages abseil/re2 itself: crowdsec must not depend on them
+    if { pkg info -d -F "$_crowdsec"; pkg info -B -F "$_crowdsec"; } | grep -Eqi 'abseil|absl|re2'; then
+        echo "Error: crowdsec depends on abseil/re2, wrong packaging branch?" >&2
+        pkg info -d -B -F "$_crowdsec" >&2
+        return 1
+    fi
+
+    _staging=$(mktemp -d)
+    cp "$@" "$_staging"/
+    # plain (uncompressed) tar, flat layout, like the previous releases
+    (cd "$_staging" && tar -cvf "$_archive" -- *.pkg)
+    rm -rf "$_staging"
+    echo "::endgroup::"
+}
+
 echo "::group::Host"
 uname -a
-sysctl -n kern.supported_archs 2>/dev/null || :
+echo "FreeBSD $FREEBSD_MAJOR ($BASE_REPO), archives: $ARCHES"
 echo "::endgroup::"
+
+#
+# amd64, and the NO_ARCH pfSense-pkg-crowdsec: poudriere
+#
 
 echo "::group::Configure poudriere"
 cat > /usr/local/etc/poudriere.conf <<EOT
 NO_ZFS=yes
 BASEFS=$BASEFS
-DISTFILES_CACHE=/usr/ports/distfiles
+DISTFILES_CACHE=$DISTDIR
 RESOLV_CONF=/etc/resolv.conf
 USE_TMPFS=no
 USE_PORTLINT=no
 ALLOW_MAKE_JOBS=yes
 CHECK_CHANGED_OPTIONS=verbose
 CHECK_CHANGED_DEPS=yes
-# fetch build dependencies (go, pkgconf...) from the official repository
-# instead of building them: the arm VMs are emulated, every build is slow
+# fetch build dependencies (go, pkgconf...) instead of building them
 PACKAGE_FETCH_BRANCH=latest
 PACKAGE_FETCH_BLACKLIST="$OWN_PACKAGES"
 EOT
-mkdir -p /usr/ports/distfiles
+mkdir -p "$DISTDIR"
 cat /usr/local/etc/poudriere.conf
 echo "::endgroup::"
 
-echo "::group::Create jail $JAIL (-v $JAIL_VERSION -a $JAIL_ARCH -m $JAIL_METHOD)"
-# explicit pkgbase repository: the default can select the wrong base for armv7
-poudriere jail -c -j "$JAIL" -v "$JAIL_VERSION" -a "$JAIL_ARCH" \
-    -m "$JAIL_METHOD" -U "$JAIL_URL"
+echo "::group::Create jail $JAIL (-v $FREEBSD_MAJOR -m pkgbase=$BASE_REPO)"
+poudriere jail -c -j "$JAIL" -v "$FREEBSD_MAJOR" -a amd64 \
+    -m "pkgbase=$BASE_REPO" -U "$PKG_URL"
 poudriere jail -l
 echo "::endgroup::"
 
@@ -93,40 +155,131 @@ poudriere ports -c -p "$PTREE" -m git+https -U "$PORTS_REPO" -B "$PORTS_BRANCH" 
 poudriere ports -c -p crowdsec -m git+https -U "$PACKAGING_REPO" -B "$PACKAGING_REF" -D
 poudriere ports -c -p pfsense -m null -M "$OVERLAY_DIR"
 poudriere ports -l
+test -d "$PORTS_DIR/Mk" && test -d "$CROWDSEC_PORTS_DIR/security/crowdsec"
 echo "::endgroup::"
 
-echo "::group::Build packages"
+echo "::group::Build amd64 packages"
 poudriere bulk -j "$JAIL" -p "$PTREE" -O crowdsec -O pfsense security/pfSense-pkg-crowdsec
 echo "::endgroup::"
 
-echo "::group::Create $OUTPUT"
-# All is a symlink to .latest/All (poudriere commits atomically): use find -L
-PKGDIR="$BASEFS/data/packages/${JAIL}-${PTREE}/All"
-STAGING=$(mktemp -d)
-
-files=""
-for name in $OWN_PACKAGES; do
-    # a digit right after the name, to avoid matching other packages
-    found=$(find -L "$PKGDIR" -maxdepth 1 -name "${name}-[0-9]*.pkg")
-    if [ "$(echo "$found" | grep -c .)" -ne 1 ]; then
-        echo "Error: expected exactly one package for $name in $PKGDIR, found: '$found'" >&2
-        exit 1
-    fi
-    pkg info -F "$found" | grep -E '^(Name|Version|Architecture)'
-    cp "$found" "$STAGING"/
-    files="$files $(basename "$found")"
-done
-
-# pfSense manages abseil/re2 itself: crowdsec must not depend on them
-crowdsec_pkg=$(find "$STAGING" -name 'crowdsec-[0-9]*.pkg')
-if { pkg info -d -F "$crowdsec_pkg"; pkg info -B -F "$crowdsec_pkg"; } | grep -Eqi 'abseil|absl|re2'; then
-    echo "Error: crowdsec depends on abseil/re2, wrong packaging branch?" >&2
-    pkg info -d -B -F "$crowdsec_pkg" >&2
+# All is a symlink to .latest/All (poudriere commits atomically)
+AMD64_PKGS="$BASEFS/data/packages/${JAIL}-${PTREE}/All"
+PFSENSE_PKG=$(find_pkg "$AMD64_PKGS" pfSense-pkg-crowdsec)
+if [ "$(pkg query -F "$PFSENSE_PKG" '%q')" != "FreeBSD:$FREEBSD_MAJOR:*" ]; then
+    echo "Error: pfSense-pkg-crowdsec must be NO_ARCH to be shipped for every architecture" >&2
     exit 1
 fi
 
-# plain (uncompressed) tar, flat layout, like the previous releases
-# shellcheck disable=SC2086
-tar -cvf "$OUTPUT" -C "$STAGING" $files
-rm -rf "$STAGING"
-echo "::endgroup::"
+case " $ARCHES " in
+    *" amd64 "*)
+        cs=$(find_pkg "$AMD64_PKGS" crowdsec)
+        fw=$(find_pkg "$AMD64_PKGS" crowdsec-firewall-bouncer)
+        make_archive amd64 "FreeBSD:$FREEBSD_MAJOR:amd64" "$cs" "$fw" "$PFSENSE_PKG"
+        ;;
+esac
+
+#
+# arm64 / armv7: cross-compilation
+#
+
+# host packages (go, pkgconf...) must come from the same branch as the ports tree
+mkdir -p /usr/local/etc/pkg/repos
+# shellcheck disable=SC2016 # ${ABI} is expanded by pkg
+echo 'FreeBSD: { url: "pkg+https://pkg.FreeBSD.org/${ABI}/latest" }' \
+    > /usr/local/etc/pkg/repos/FreeBSD.conf
+
+# cross_build <arm64|armv7>
+cross_build() {
+    case "$1" in
+        arm64) _arch=aarch64 _goarch=arm64 _triple=aarch64-unknown-freebsd$FREEBSD_MAJOR.0 ;;
+        armv7) _arch=armv7 _goarch=arm _triple=armv7-unknown-freebsd$FREEBSD_MAJOR.0-gnueabihf ;;
+        *) echo "unsupported architecture $1" >&2; return 1 ;;
+    esac
+    _abi=FreeBSD:$FREEBSD_MAJOR:$_arch
+    _dir=$CROSS_BASE/$_arch
+    _sysroot=$_dir/sysroot
+    mkdir -p "$_dir/repos" "$_sysroot/var/db/pkg" "$_sysroot/usr/share/keys" "$_dir/packages/All"
+
+    echo "::group::[$1] Install the $_abi sysroot from $BASE_REPO"
+    cp -R /usr/share/keys/pkg "$_sysroot/usr/share/keys/"
+    cat > "$_dir/repos/base.conf" <<EOT
+base: {
+  url: "$PKG_URL/$_abi/$BASE_REPO",
+  mirror_type: "srv",
+  signature_type: "fingerprints",
+  fingerprints: "/usr/share/keys/pkg",
+  enabled: yes
+}
+EOT
+    _xpkg() {
+        pkg -r "$_sysroot" -o ABI="$_abi" -o IGNORE_OSVERSION=yes \
+            -o REPOS_DIR="$_dir/repos" -o PKG_CACHEDIR="$_dir/cache" \
+            -o ASSUME_ALWAYS_YES=yes "$@"
+    }
+    _xpkg update -f
+    # the whole base, minus kernels, debug symbols, sources, tests and meta-packages
+    _xpkg rquery -a '%n' \
+        | grep -v -E -- '-(dbg|lib32|dbg-lib32|man|src|src-sys|tests)$|^FreeBSD-(kernel|set|src|tests)' \
+        | sort > "$_dir/base.list"
+    wc -l < "$_dir/base.list"
+    # -I: no install scripts, they would be target binaries
+    # shellcheck disable=SC2046
+    _xpkg install -I $(cat "$_dir/base.list") > "$_dir/base-install.log" 2>&1 \
+        || { tail -n 50 "$_dir/base-install.log" >&2; return 1; }
+    test -f "$_sysroot/usr/include/sys/param.h" && test -x "$_sysroot/bin/sh"
+    file "$_sysroot/bin/sh"
+    echo "::endgroup::"
+
+    echo "::group::[$1] Configure the cross toolchain ($_triple, GOARCH=$_goarch)"
+    # read by bsd.port.mk: ${LOCALBASE}/share/toolchains/${CROSS_TOOLCHAIN}.mk,
+    # and ARCH is taken from the toolchain name (aarch64, armv7)
+    mkdir -p /usr/local/share/toolchains
+    cat > "/usr/local/share/toolchains/$_arch-clang.mk" <<EOT
+XCC=	/usr/bin/cc --target=$_triple
+XCXX=	/usr/bin/c++ --target=$_triple
+XCPP=	/usr/bin/cpp --target=$_triple
+CROSS_BINUTILS_PREFIX=	/usr/bin/
+EOT
+    cat > "$_dir/make.conf" <<EOT
+CROSS_TOOLCHAIN=	$_arch-clang
+CROSS_SYSROOT=	$_sysroot
+OVERLAYS=	$CROWDSEC_PORTS_DIR
+WRKDIRPREFIX=	$_dir/work
+PACKAGES=	$_dir/packages
+DISTDIR=	$DISTDIR
+BATCH=	yes
+# go.mk sets GOARM from ARCH, and passes CC (the cross compiler) to cgo
+GO_ENV+=	GOARCH=$_goarch
+EOT
+    cat "/usr/local/share/toolchains/$_arch-clang.mk" "$_dir/make.conf"
+    echo "::endgroup::"
+
+    for _port in $CROSS_PORTS; do
+        _portdir=$CROWDSEC_PORTS_DIR/$_port
+        echo "::group::[$1] Build $_port"
+        # build dependencies are host tools: install them natively
+        make -C "$_portdir" PORTSDIR="$PORTS_DIR" OVERLAYS="$CROWDSEC_PORTS_DIR" \
+            DISTDIR="$DISTDIR" BATCH=yes install-missing-packages
+        make -C "$_portdir" PORTSDIR="$PORTS_DIR" __MAKE_CONF="$_dir/make.conf" \
+            -V ARCH -V OSVERSION -V CC -V GO_ENV
+        make -C "$_portdir" PORTSDIR="$PORTS_DIR" __MAKE_CONF="$_dir/make.conf" package \
+            > "$LOGS_DIR/cross-$_arch-$(basename "$_port").log" 2>&1 \
+            || { tail -n 80 "$LOGS_DIR/cross-$_arch-$(basename "$_port").log" >&2; return 1; }
+        tail -n 5 "$LOGS_DIR/cross-$_arch-$(basename "$_port").log"
+        echo "::endgroup::"
+    done
+
+    _cs=$(find_pkg "$_dir/packages/All" crowdsec) || return 1
+    _fw=$(find_pkg "$_dir/packages/All" crowdsec-firewall-bouncer) || return 1
+    make_archive "$_arch" "$_abi" "$_cs" "$_fw" "$PFSENSE_PKG"
+}
+
+for a in $ARCHES; do
+    case "$a" in
+        amd64) ;;
+        arm64|armv7) cross_build "$a" ;;
+        *) echo "Error: unknown architecture $a" >&2; exit 1 ;;
+    esac
+done
+
+ls -l "$OUT_DIR"

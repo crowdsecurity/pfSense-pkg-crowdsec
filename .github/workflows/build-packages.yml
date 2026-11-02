@@ -7,8 +7,11 @@ name: Build packages
 # - prerelease published: all archives are built from the release tag and
 #   attached to that release
 # - manual run: archives are uploaded as workflow artifacts; the "arch" input
-#   restricts the build to one architecture (amd64 only takes minutes, the arm
-#   builds run in emulated VMs and take hours)
+#   restricts which archives are produced
+#
+# Everything runs in amd64 VMs: amd64 with poudriere, arm64 and armv7
+# cross-compiled (native Go and clang, cgo for mattn sqlite) against a sysroot
+# installed from the target's pkgbase repository. See .github/scripts/build-packages.sh
 
 on:
   release:
@@ -46,100 +49,78 @@ env:
   PORTS_BRANCH: ${{ inputs.ports_branch || 'main' }}
 
 jobs:
-  setup:
-    name: Select architectures
-    runs-on: ubuntu-latest
-    outputs:
-      arch: ${{ steps.select.outputs.arch }}
-    steps:
-      - id: select
-        env:
-          # empty on release events: build everything
-          WANTED: ${{ inputs.arch || 'all' }}
-        run: |
-          # vm:    vmactions arch (empty = x86_64). armv7 is built on arm64 (native
-          #        32-bit compat, no qemu-user). aarch64 VMs are fully emulated on
-          #        the x86 runner (recommended by vmactions over ubuntu-24.04-arm),
-          #        so these jobs are slow.
-          # jail:  "poudriere jail -a"
-          # asset: architecture in the archive name (uname -m, arm64 -> aarch64)
-          all='[
-            {"name":"amd64","vm":"","jail":"amd64","asset":"amd64"},
-            {"name":"arm64","vm":"aarch64","jail":"arm64.aarch64","asset":"aarch64"},
-            {"name":"armv7","vm":"aarch64","jail":"armv7","asset":"armv7"}
-          ]'
-          arch=$(echo "$all" | jq -c --arg w "$WANTED" 'map(select($w == "all" or .name == $w))')
-          echo "arch=$arch" >> "$GITHUB_OUTPUT"
-          echo "$arch" | jq .
-
   build:
-    name: FreeBSD ${{ matrix.freebsd.major }} ${{ matrix.arch.name }}
-    needs: setup
+    name: FreeBSD ${{ matrix.freebsd.major }}
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
         freebsd:
-          # release: VM image (vmactions/freebsd-vm). The host kernel should be >= the jail.
-          # version: "poudriere jail -v"
-          # method:  "poudriere jail -m", with an explicit pkgbase repository
-          #          (the default can select the wrong base repository for armv7)
-          # major:   used in the archive name, as expected by install-crowdsec.sh
-          - { release: '14.5', version: '14', method: 'pkgbase=base_release_5', major: '14' }
-          - { release: '15.1', version: '15', method: 'pkgbase=base_release_1', major: '15' }
-          # vmactions has no 16.0 image yet (still CURRENT): build the 16 jail on the
-          # newest available host. Poudriere warns that the jail is newer than the kernel.
+          # release: VM image (vmactions/freebsd-vm). The host kernel should be >= the
+          #          target, for the amd64 poudriere jail.
+          # base:    pkgbase repository, for the amd64 jail and the arm sysroots
+          # major:   target version, used in the archive names
+          - { release: '14.5', base: 'base_release_5', major: '14' }
+          - { release: '15.1', base: 'base_release_1', major: '15' }
+          # vmactions has no 16.0 image yet (still CURRENT): build on the newest
+          # available host. Poudriere warns that the jail is newer than the kernel.
           # Switch release to '16.0' as soon as vmactions publishes it.
-          - { release: '15.1', version: '16', method: 'pkgbase=base_latest', major: '16' }
-        arch: ${{ fromJSON(needs.setup.outputs.arch) }}
+          - { release: '15.1', base: 'base_latest', major: '16' }
 
     env:
-      JAIL_VERSION: ${{ matrix.freebsd.version }}
-      JAIL_METHOD: ${{ matrix.freebsd.method }}
-      JAIL_URL: pkg+https://pkg.freebsd.org
-      JAIL_ARCH: ${{ matrix.arch.jail }}
-      ARCHIVE: freebsd-${{ matrix.freebsd.major }}-${{ matrix.arch.asset }}.tar
+      FREEBSD_MAJOR: ${{ matrix.freebsd.major }}
+      BASE_REPO: ${{ matrix.freebsd.base }}
+      # empty on release events: build everything
+      ARCHES: ${{ (inputs.arch == '' || inputs.arch == 'all') && 'amd64 arm64 armv7' || inputs.arch }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build in FreeBSD ${{ matrix.freebsd.release }} ${{ matrix.arch.vm || 'x86_64' }} VM
+      - name: Build in FreeBSD ${{ matrix.freebsd.release }} VM
         uses: vmactions/freebsd-vm@v1
         with:
           release: ${{ matrix.freebsd.release }}
-          arch: ${{ matrix.arch.vm }}
           usesh: true
           mem: 12288
-          envs: 'PACKAGING_REF PORTS_BRANCH ARCHIVE JAIL_VERSION JAIL_METHOD JAIL_URL JAIL_ARCH'
+          envs: 'PACKAGING_REF PORTS_BRANCH FREEBSD_MAJOR BASE_REPO ARCHES'
           prepare: |
             pkg install -y git-lite poudriere-devel
           # don't fail here: the VM only copies files back on success,
-          # and we want the poudriere logs in any case
+          # and we want the logs in any case
           run: |
             sh .github/scripts/build-packages.sh || touch build-failed
 
-      - name: Upload poudriere logs
+      - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: logs-${{ matrix.freebsd.major }}-${{ matrix.arch.asset }}
-          path: poudriere-logs/
+          name: logs-${{ matrix.freebsd.major }}
+          path: build-logs/
           if-no-files-found: ignore
 
       - name: Check build result
         run: |
-          if [ -e build-failed ] || [ ! -s "$ARCHIVE" ]; then
-            echo "::error::build failed for $ARCHIVE, see the logs artifact"
+          if [ -e build-failed ]; then
+            echo "::error::build failed for FreeBSD $FREEBSD_MAJOR, see the logs artifact"
             exit 1
           fi
-          tar -tvf "$ARCHIVE"
+          for a in $ARCHES; do
+            [ "$a" = arm64 ] && a=aarch64
+            f="out/freebsd-$FREEBSD_MAJOR-$a.tar"
+            if [ ! -s "$f" ]; then
+              echo "::error::missing $f"
+              exit 1
+            fi
+            echo "== $f"
+            tar -tvf "$f"
+          done
 
-      - name: Upload archive
+      - name: Upload archives
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARCHIVE }}
-          path: ${{ env.ARCHIVE }}
+          name: packages-${{ matrix.freebsd.major }}
+          path: out/freebsd-*.tar
           if-no-files-found: error
 
   release:
@@ -152,7 +133,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: freebsd-*.tar
+          pattern: packages-*
           path: dist
           merge-multiple: true
 
