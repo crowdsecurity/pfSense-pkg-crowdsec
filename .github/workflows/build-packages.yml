@@ -6,12 +6,17 @@ name: Build packages
 #
 # - prerelease published: all archives are built from the release tag and
 #   attached to that release
-# - pull request / manual run: archives are uploaded as workflow artifacts; the "arch" input
-#   (manual runs only) restricts which archives are produced
+# - pull request / manual run: archives are uploaded as workflow artifacts;
+#   for manual runs, the "arch" input selects the architecture(s)
 #
-# Everything runs in amd64 VMs: amd64 with poudriere, arm64 and armv7
-# cross-compiled (native Go and clang, cgo for mattn sqlite) against a sysroot
-# installed from the target's pkgbase repository. See .github/scripts/build-packages.sh
+# One job per FreeBSD version and architecture, all in amd64 VMs:
+# - amd64: poudriere. Also builds pfSense-pkg-crowdsec, which is NO_ARCH and
+#   shipped in every archive: these jobs always run, even when only arm is
+#   selected.
+# - arm64 / armv7: cross-compiled (native Go and clang, cgo for mattn sqlite)
+#   against a sysroot installed from the target's pkgbase repository. They start
+#   once the amd64 jobs are done, and take pfSense-pkg-crowdsec from them.
+# See .github/scripts/build-packages.sh
 
 on:
   release:
@@ -52,16 +57,18 @@ env:
   # the special pfSense branch: crowdsec built with WebAssembly re2, no abseil
   PACKAGING_REF: ${{ inputs.packaging_ref || 'crowdsec-wasm' }}
   PORTS_BRANCH: ${{ inputs.ports_branch || 'main' }}
+  # empty on release and pull request events: build everything
+  WANTED_ARCH: ${{ inputs.arch || 'all' }}
 
 jobs:
-  build:
-    name: FreeBSD ${{ matrix.freebsd.major }}
+  amd64:
+    name: FreeBSD ${{ matrix.freebsd.major }} amd64
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        freebsd:
+        freebsd: &freebsd
           # release: VM image (vmactions/freebsd-vm). The host kernel should be >= the
           #          target, for the amd64 poudriere jail.
           # base:    pkgbase repository, for the amd64 jail and the arm sysroots
@@ -76,8 +83,7 @@ jobs:
     env:
       FREEBSD_MAJOR: ${{ matrix.freebsd.major }}
       BASE_REPO: ${{ matrix.freebsd.base }}
-      # empty on release events: build everything
-      ARCHES: ${{ (inputs.arch == '' || inputs.arch == 'all') && 'amd64 arm64 armv7' || inputs.arch }}
+      TARGET: amd64
 
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +94,7 @@ jobs:
           release: ${{ matrix.freebsd.release }}
           usesh: true
           mem: 12288
-          envs: 'PACKAGING_REF PORTS_BRANCH FREEBSD_MAJOR BASE_REPO ARCHES'
+          envs: 'PACKAGING_REF PORTS_BRANCH FREEBSD_MAJOR BASE_REPO TARGET'
           prepare: |
             pkg install -y git-lite poudriere-devel
           # don't fail here: the VM only copies files back on success,
@@ -100,38 +106,106 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: logs-${{ matrix.freebsd.major }}
+          name: logs-${{ matrix.freebsd.major }}-amd64
           path: build-logs/
           if-no-files-found: ignore
 
       - name: Check build result
         run: |
           if [ -e build-failed ]; then
-            echo "::error::build failed for FreeBSD $FREEBSD_MAJOR, see the logs artifact"
+            echo "::error::build failed for FreeBSD $FREEBSD_MAJOR amd64, see the logs artifact"
             exit 1
           fi
-          for a in $ARCHES; do
-            [ "$a" = arm64 ] && a=aarch64
-            f="out/freebsd-$FREEBSD_MAJOR-$a.tar"
-            if [ ! -s "$f" ]; then
-              echo "::error::missing $f"
-              exit 1
-            fi
-            echo "== $f"
-            tar -tvf "$f"
-          done
+          ls -l plugin/
+          tar -tvf "out/freebsd-$FREEBSD_MAJOR-amd64.tar"
 
-      - name: Upload archives
+      # needed by the arm jobs, whatever the selection
+      - name: Upload pfSense-pkg-crowdsec
         uses: actions/upload-artifact@v4
         with:
-          name: packages-${{ matrix.freebsd.major }}
+          name: plugin-${{ matrix.freebsd.major }}
+          path: plugin/*.pkg
+          if-no-files-found: error
+
+      - name: Upload archive
+        if: env.WANTED_ARCH == 'all' || env.WANTED_ARCH == 'amd64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.freebsd.major }}-amd64
+          path: out/freebsd-*.tar
+          if-no-files-found: error
+
+  cross:
+    name: FreeBSD ${{ matrix.freebsd.major }} ${{ matrix.arch.name }}
+    needs: amd64
+    # run even if the amd64 job of another FreeBSD version failed: each job
+    # only needs the pfSense-pkg-crowdsec of its own version
+    if: ${{ !cancelled() && (inputs.arch || 'all') != 'amd64' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        freebsd: *freebsd
+        # asset: architecture in the archive name (uname -m, arm64 -> aarch64)
+        arch: ${{ fromJSON(contains(fromJSON('["arm64","armv7"]'), inputs.arch) && format('[{{"name":"{0}","asset":"{1}"}}]', inputs.arch, inputs.arch == 'arm64' && 'aarch64' || 'armv7') || '[{"name":"arm64","asset":"aarch64"},{"name":"armv7","asset":"armv7"}]') }}
+
+    env:
+      FREEBSD_MAJOR: ${{ matrix.freebsd.major }}
+      BASE_REPO: ${{ matrix.freebsd.base }}
+      TARGET: ${{ matrix.arch.name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get pfSense-pkg-crowdsec from the amd64 build
+        uses: actions/download-artifact@v4
+        with:
+          name: plugin-${{ matrix.freebsd.major }}
+          path: plugin
+
+      - name: Cross-compile in FreeBSD ${{ matrix.freebsd.release }} VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: ${{ matrix.freebsd.release }}
+          usesh: true
+          mem: 12288
+          envs: 'PACKAGING_REF PORTS_BRANCH FREEBSD_MAJOR BASE_REPO TARGET'
+          prepare: |
+            pkg install -y git-lite
+          # don't fail here: the VM only copies files back on success,
+          # and we want the logs in any case
+          run: |
+            sh .github/scripts/build-packages.sh || touch build-failed
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.freebsd.major }}-${{ matrix.arch.asset }}
+          path: build-logs/
+          if-no-files-found: ignore
+
+      - name: Check build result
+        run: |
+          f="out/freebsd-$FREEBSD_MAJOR-${{ matrix.arch.asset }}.tar"
+          if [ -e build-failed ] || [ ! -s "$f" ]; then
+            echo "::error::build failed for FreeBSD $FREEBSD_MAJOR $TARGET, see the logs artifact"
+            exit 1
+          fi
+          tar -tvf "$f"
+
+      - name: Upload archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.freebsd.major }}-${{ matrix.arch.asset }}
           path: out/freebsd-*.tar
           if-no-files-found: error
 
   release:
     name: Attach archives to the prerelease
     if: github.event_name == 'release'
-    needs: build
+    needs: [amd64, cross]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -150,6 +224,7 @@ jobs:
         run: |
           set -eu
           ls -l dist
+          [ "$(ls dist/*.tar | wc -l)" -eq 9 ] || { echo "::error::expected 9 archives"; exit 1; }
           for f in dist/*.tar; do
             echo "== $f"
             tar -tf "$f"

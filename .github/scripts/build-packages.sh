@@ -1,16 +1,19 @@
 #!/bin/sh
 #
 # Build crowdsec, crowdsec-firewall-bouncer and pfSense-pkg-crowdsec for one
-# FreeBSD major version, for amd64, arm64 and armv7, on an amd64 host.
+# FreeBSD major version and one architecture, on an amd64 host.
 #
-# - amd64: poudriere bulk in a pkgbase jail (also produces pfSense-pkg-crowdsec,
-#   which is NO_ARCH and shipped in every archive)
-# - arm64 / armv7: cross-compiled with the ports framework (CROSS_TOOLCHAIN +
-#   CROSS_SYSROOT): native amd64 Go and clang, cgo enabled (mattn sqlite),
-#   against a sysroot installed from the target's pkgbase repository.
+# - TARGET=amd64: poudriere bulk in a pkgbase jail. Also produces
+#   pfSense-pkg-crowdsec, which is NO_ARCH: it is copied to $PLUGIN_DIR and
+#   shipped in the archives of every architecture.
+# - TARGET=arm64 / armv7: cross-compiled with the ports framework
+#   (CROSS_TOOLCHAIN + CROSS_SYSROOT): native amd64 Go and clang, cgo enabled
+#   (mattn sqlite), against a sysroot installed from the target's pkgbase
+#   repository. Needs the pfSense-pkg-crowdsec package of the amd64 build in
+#   $PLUGIN_DIR.
 #
-# Each architecture ends up in out/freebsd-<major>-<arch>.tar (plain tar, flat
-# layout), as expected by install-crowdsec.sh.
+# The result is out/freebsd-<major>-<arch>.tar (plain tar, flat layout), as
+# expected by install-crowdsec.sh.
 #
 # Must run as root on an amd64 FreeBSD host. The host kernel should be >= the
 # target version for the amd64 jail.
@@ -18,7 +21,8 @@
 # environment:
 #   FREEBSD_MAJOR   target FreeBSD major version  (14, 15, 16)
 #   BASE_REPO       pkgbase repository             (base_release_5, base_release_1, base_latest)
-#   ARCHES          architectures to package       (default: "amd64 arm64 armv7")
+#   TARGET          architecture to build          (amd64, arm64, armv7)
+#   PLUGIN_DIR      pfSense-pkg-crowdsec package   (default: ./plugin)
 #   PKG_URL         package mirror                 (default: pkg+https://pkg.freebsd.org)
 #   OUT_DIR         output directory               (default: ./out)
 #   PACKAGING_REPO  crowdsec ports overlay         (default: crowdsecurity/packaging-freebsd)
@@ -29,13 +33,13 @@
 
 set -eu
 
-: "${FREEBSD_MAJOR:?}" "${BASE_REPO:?}"
+: "${FREEBSD_MAJOR:?}" "${BASE_REPO:?}" "${TARGET:?}"
 # never wait for a confirmation
 export ASSUME_ALWAYS_YES=yes
-ARCHES=${ARCHES:-amd64 arm64 armv7}
 PKG_URL=${PKG_URL:-pkg+https://pkg.freebsd.org}
 OUT_DIR=$(mkdir -p "${OUT_DIR:-out}" && cd "${OUT_DIR:-out}" && pwd)
 LOGS_DIR=$(mkdir -p "${LOGS_DIR:-build-logs}" && cd "${LOGS_DIR:-build-logs}" && pwd)
+PLUGIN_DIR=$(mkdir -p "${PLUGIN_DIR:-plugin}" && cd "${PLUGIN_DIR:-plugin}" && pwd)
 
 PACKAGING_REPO=${PACKAGING_REPO:-https://github.com/crowdsecurity/packaging-freebsd.git}
 PACKAGING_REF=${PACKAGING_REF:-crowdsec-wasm}
@@ -48,9 +52,6 @@ OVERLAY_DIR=$(cd "$(dirname "$0")/../.." && pwd)
 BASEFS=/usr/local/poudriere
 JAIL=j${FREEBSD_MAJOR}_amd64
 PTREE=freebsd
-# poudriere puts the git ports trees here, the cross builds reuse them
-PORTS_DIR=$BASEFS/ports/$PTREE
-CROWDSEC_PORTS_DIR=$BASEFS/ports/crowdsec
 DISTDIR=/usr/ports/distfiles
 CROSS_BASE=/usr/local/cross
 
@@ -118,15 +119,16 @@ make_archive() {
 
 echo "::group::Host"
 uname -a
-echo "FreeBSD $FREEBSD_MAJOR ($BASE_REPO), archives: $ARCHES"
+echo "FreeBSD $FREEBSD_MAJOR ($BASE_REPO), target: $TARGET"
 echo "::endgroup::"
 
 #
 # amd64, and the NO_ARCH pfSense-pkg-crowdsec: poudriere
 #
 
-echo "::group::Configure poudriere"
-cat > /usr/local/etc/poudriere.conf <<EOT
+build_amd64() {
+    echo "::group::Configure poudriere"
+    cat > /usr/local/etc/poudriere.conf <<EOT
 NO_ZFS=yes
 BASEFS=$BASEFS
 DISTFILES_CACHE=$DISTDIR
@@ -140,57 +142,66 @@ CHECK_CHANGED_DEPS=yes
 PACKAGE_FETCH_BRANCH=latest
 PACKAGE_FETCH_BLACKLIST="$OWN_PACKAGES"
 EOT
-mkdir -p "$DISTDIR"
-cat /usr/local/etc/poudriere.conf
-echo "::endgroup::"
+    mkdir -p "$DISTDIR"
+    cat /usr/local/etc/poudriere.conf
+    echo "::endgroup::"
 
-echo "::group::Create jail $JAIL (-v $FREEBSD_MAJOR -m pkgbase=$BASE_REPO)"
-poudriere jail -c -j "$JAIL" -v "$FREEBSD_MAJOR" -a amd64 \
-    -m "pkgbase=$BASE_REPO" -U "$PKG_URL"
-poudriere jail -l
-echo "::endgroup::"
+    echo "::group::Create jail $JAIL (-v $FREEBSD_MAJOR -m pkgbase=$BASE_REPO)"
+    poudriere jail -c -j "$JAIL" -v "$FREEBSD_MAJOR" -a amd64 \
+        -m "pkgbase=$BASE_REPO" -U "$PKG_URL"
+    poudriere jail -l
+    echo "::endgroup::"
 
-echo "::group::Create ports trees"
-poudriere ports -c -p "$PTREE" -m git+https -U "$PORTS_REPO" -B "$PORTS_BRANCH" -D
-poudriere ports -c -p crowdsec -m git+https -U "$PACKAGING_REPO" -B "$PACKAGING_REF" -D
-poudriere ports -c -p pfsense -m null -M "$OVERLAY_DIR"
-poudriere ports -l
-test -d "$PORTS_DIR/Mk" && test -d "$CROWDSEC_PORTS_DIR/security/crowdsec"
-echo "::endgroup::"
+    echo "::group::Create ports trees"
+    poudriere ports -c -p "$PTREE" -m git+https -U "$PORTS_REPO" -B "$PORTS_BRANCH" -D
+    poudriere ports -c -p crowdsec -m git+https -U "$PACKAGING_REPO" -B "$PACKAGING_REF" -D
+    poudriere ports -c -p pfsense -m null -M "$OVERLAY_DIR"
+    poudriere ports -l
+    echo "::endgroup::"
 
-echo "::group::Build amd64 packages"
-poudriere bulk -j "$JAIL" -p "$PTREE" -O crowdsec -O pfsense security/pfSense-pkg-crowdsec
-echo "::endgroup::"
+    echo "::group::Build amd64 packages"
+    poudriere bulk -j "$JAIL" -p "$PTREE" -O crowdsec -O pfsense security/pfSense-pkg-crowdsec
+    echo "::endgroup::"
 
-# All is a symlink to .latest/All (poudriere commits atomically)
-AMD64_PKGS="$BASEFS/data/packages/${JAIL}-${PTREE}/All"
-PFSENSE_PKG=$(find_pkg "$AMD64_PKGS" pfSense-pkg-crowdsec)
-if [ "$(pkg query -F "$PFSENSE_PKG" '%q')" != "FreeBSD:$FREEBSD_MAJOR:*" ]; then
-    echo "Error: pfSense-pkg-crowdsec must be NO_ARCH to be shipped for every architecture" >&2
-    exit 1
-fi
+    # All is a symlink to .latest/All (poudriere commits atomically)
+    AMD64_PKGS="$BASEFS/data/packages/${JAIL}-${PTREE}/All"
+    PFSENSE_PKG=$(find_pkg "$AMD64_PKGS" pfSense-pkg-crowdsec)
+    if [ "$(pkg query -F "$PFSENSE_PKG" '%q')" != "FreeBSD:$FREEBSD_MAJOR:*" ]; then
+        echo "Error: pfSense-pkg-crowdsec must be NO_ARCH to be shipped for every architecture" >&2
+        exit 1
+    fi
+    # for the arm builds
+    cp "$PFSENSE_PKG" "$PLUGIN_DIR"/
 
-case " $ARCHES " in
-    *" amd64 "*)
-        cs=$(find_pkg "$AMD64_PKGS" crowdsec)
-        fw=$(find_pkg "$AMD64_PKGS" crowdsec-firewall-bouncer)
-        make_archive amd64 "FreeBSD:$FREEBSD_MAJOR:amd64" "$cs" "$fw" "$PFSENSE_PKG"
-        ;;
-esac
+    cs=$(find_pkg "$AMD64_PKGS" crowdsec)
+    fw=$(find_pkg "$AMD64_PKGS" crowdsec-firewall-bouncer)
+    make_archive amd64 "FreeBSD:$FREEBSD_MAJOR:amd64" "$cs" "$fw" "$PFSENSE_PKG"
+}
 
 #
 # arm64 / armv7: cross-compilation
 #
 
-# host packages (go, pkgconf...) must come from the same branch as the ports tree
-mkdir -p /usr/local/etc/pkg/repos
-# shellcheck disable=SC2016 # ${ABI} is expanded by pkg
-echo 'FreeBSD: { url: "pkg+https://pkg.FreeBSD.org/${ABI}/latest", mirror_type: "srv" }' \
-    > /usr/local/etc/pkg/repos/FreeBSD.conf
-pkg update -f
-
 # cross_build <arm64|armv7>
 cross_build() {
+    PFSENSE_PKG=$(find_pkg "$PLUGIN_DIR" pfSense-pkg-crowdsec)
+    PORTS_DIR=$CROSS_BASE/ports
+    CROWDSEC_PORTS_DIR=$CROSS_BASE/packaging
+
+    echo "::group::[$1] Clone the ports trees"
+    # host packages (go, pkgconf...) must come from the same branch as the ports tree
+    mkdir -p /usr/local/etc/pkg/repos
+    # shellcheck disable=SC2016 # ${ABI} is expanded by pkg
+    echo 'FreeBSD: { url: "pkg+https://pkg.FreeBSD.org/${ABI}/latest", mirror_type: "srv" }' \
+        > /usr/local/etc/pkg/repos/FreeBSD.conf
+    pkg update -f
+    mkdir -p "$DISTDIR"
+    git clone --quiet --depth 1 --branch "$PORTS_BRANCH" "$PORTS_REPO" "$PORTS_DIR"
+    git clone --quiet --depth 1 --branch "$PACKAGING_REF" "$PACKAGING_REPO" "$CROWDSEC_PORTS_DIR"
+    git -C "$PORTS_DIR" log -1 --format='ports: %h %cd %s'
+    git -C "$CROWDSEC_PORTS_DIR" log -1 --format='packaging-freebsd: %h %cd %s'
+    echo "::endgroup::"
+
     case "$1" in
         # _binutils: host package providing a GNU ld.bfd for the target
         arm64) _arch=aarch64 _goarch=arm64 _binutils=aarch64-binutils
@@ -296,12 +307,10 @@ EOT
     make_archive "$_arch" "$_abi" "$_cs" "$_fw" "$PFSENSE_PKG"
 }
 
-for a in $ARCHES; do
-    case "$a" in
-        amd64) ;;
-        arm64|armv7) cross_build "$a" ;;
-        *) echo "Error: unknown architecture $a" >&2; exit 1 ;;
-    esac
-done
+case "$TARGET" in
+    amd64) build_amd64 ;;
+    arm64|armv7) cross_build "$TARGET" ;;
+    *) echo "Error: unknown target $TARGET" >&2; exit 1 ;;
+esac
 
 ls -l "$OUT_DIR"
