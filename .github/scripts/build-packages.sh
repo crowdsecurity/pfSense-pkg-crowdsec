@@ -185,36 +185,49 @@ esac
 # host packages (go, pkgconf...) must come from the same branch as the ports tree
 mkdir -p /usr/local/etc/pkg/repos
 # shellcheck disable=SC2016 # ${ABI} is expanded by pkg
-echo 'FreeBSD: { url: "pkg+https://pkg.FreeBSD.org/${ABI}/latest" }' \
+echo 'FreeBSD: { url: "pkg+https://pkg.FreeBSD.org/${ABI}/latest", mirror_type: "srv" }' \
     > /usr/local/etc/pkg/repos/FreeBSD.conf
+pkg update -f
 
 # cross_build <arm64|armv7>
 cross_build() {
     case "$1" in
-        arm64) _arch=aarch64 _goarch=arm64 _triple=aarch64-unknown-freebsd$FREEBSD_MAJOR.0 ;;
-        armv7) _arch=armv7 _goarch=arm _triple=armv7-unknown-freebsd$FREEBSD_MAJOR.0-gnueabihf ;;
+        # _binutils: host package providing a GNU ld.bfd for the target
+        arm64) _arch=aarch64 _goarch=arm64 _binutils=aarch64-binutils
+               _triple=aarch64-unknown-freebsd$FREEBSD_MAJOR.0 ;;
+        armv7) _arch=armv7 _goarch=arm _binutils=arm-gnueabi-binutils
+               _triple=armv7-unknown-freebsd$FREEBSD_MAJOR.0-gnueabihf ;;
         *) echo "unsupported architecture $1" >&2; return 1 ;;
     esac
     _abi=FreeBSD:$FREEBSD_MAJOR:$_arch
     _dir=$CROSS_BASE/$_arch
     _sysroot=$_dir/sysroot
-    mkdir -p "$_dir/repos" "$_sysroot/var/db/pkg" "$_sysroot/usr/share/keys" "$_dir/packages/All"
+    _keys=/usr/share/keys/cross-base
+    mkdir -p "$_dir/repos" "$_dir/bin" "$_sysroot/var/db/pkg" "$_dir/packages/All"
 
     echo "::group::[$1] Install the $_abi sysroot from $BASE_REPO"
-    cp -R /usr/share/keys/pkg "$_sysroot/usr/share/keys/"
+    # base repositories are signed either with the classic pkg key or with the
+    # pkgbase-<major> keys (e.g. 15 aarch64): trust both. The directory is also
+    # copied in the sysroot, in case pkg -r resolves it there.
+    mkdir -p "$_keys/trusted" "$_keys/revoked"
+    for _k in /usr/share/keys/pkg /usr/share/keys/pkgbase-*; do
+        [ -d "$_k/trusted" ] && cp "$_k"/trusted/* "$_keys/trusted/"
+    done
+    ls "$_keys/trusted"
+    mkdir -p "$_sysroot/usr/share/keys"
+    cp -R "$_keys" "$_sysroot/usr/share/keys/"
     cat > "$_dir/repos/base.conf" <<EOT
 base: {
   url: "$PKG_URL/$_abi/$BASE_REPO",
   mirror_type: "srv",
   signature_type: "fingerprints",
-  fingerprints: "/usr/share/keys/pkg",
+  fingerprints: "$_keys",
   enabled: yes
 }
 EOT
     _xpkg() {
         pkg -r "$_sysroot" -o ABI="$_abi" -o IGNORE_OSVERSION=yes \
-            -o REPOS_DIR="$_dir/repos" -o PKG_CACHEDIR="$_dir/cache" \
-            -o ASSUME_ALWAYS_YES=yes "$@"
+            -o REPOS_DIR="$_dir/repos" -o PKG_CACHEDIR="$_dir/cache" "$@"
     }
     _xpkg update -f
     # the whole base, minus kernels, debug symbols, sources, tests and meta-packages
@@ -231,12 +244,20 @@ EOT
     echo "::endgroup::"
 
     echo "::group::[$1] Configure the cross toolchain ($_triple, GOARCH=$_goarch)"
+    # Go links freebsd/arm64 with -fuse-ld=bfd, which the base system lacks:
+    # use the GNU ld of the host's binutils package for the target, found by
+    # clang through -B
+    pkg install -y "$_binutils"
+    _bfd=$(pkg info -l "$_binutils" | awk '$1 ~ /[/-]ld\.bfd$/ {print $1; exit}')
+    test -x "$_bfd"
+    ln -sf "$_bfd" "$_dir/bin/ld.bfd"
+    "$_dir/bin/ld.bfd" --version | head -n 1
     # read by bsd.port.mk: ${LOCALBASE}/share/toolchains/${CROSS_TOOLCHAIN}.mk,
     # and ARCH is taken from the toolchain name (aarch64, armv7)
     mkdir -p /usr/local/share/toolchains
     cat > "/usr/local/share/toolchains/$_arch-clang.mk" <<EOT
-XCC=	/usr/bin/cc --target=$_triple
-XCXX=	/usr/bin/c++ --target=$_triple
+XCC=	/usr/bin/cc --target=$_triple -B$_dir/bin
+XCXX=	/usr/bin/c++ --target=$_triple -B$_dir/bin
 XCPP=	/usr/bin/cpp --target=$_triple
 CROSS_BINUTILS_PREFIX=	/usr/bin/
 EOT
