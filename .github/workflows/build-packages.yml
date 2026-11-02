@@ -4,20 +4,26 @@ name: Build packages
 # every supported FreeBSD version / architecture, using the ports from
 # crowdsecurity/packaging-freebsd (pfSense branch) as an overlay.
 #
-# - pull requests / manual runs: archives are uploaded as workflow artifacts
-# - tags v*: archives are also attached to a draft GitHub release
+# - prerelease published: all archives are built from the release tag and
+#   attached to that release
+# - manual run: archives are uploaded as workflow artifacts; the "arch" input
+#   restricts the build to one architecture (amd64 only takes minutes, the arm
+#   builds run in emulated VMs and take hours)
 
 on:
-  push:
-    tags:
-      - 'v*'
-  pull_request:
-    paths:
-      - 'security/**'
-      - '.github/workflows/build-packages.yml'
-      - '.github/scripts/build-packages.sh'
+  release:
+    types: [prereleased]
   workflow_dispatch:
     inputs:
+      arch:
+        description: 'Architecture(s) to build'
+        type: choice
+        options:
+          - all
+          - amd64
+          - arm64
+          - armv7
+        default: all
       packaging_ref:
         description: 'Branch/tag of crowdsecurity/packaging-freebsd'
         default: 'crowdsec-wasm'
@@ -32,7 +38,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 env:
   # the special pfSense branch: crowdsec built with WebAssembly re2, no abseil
@@ -40,8 +46,35 @@ env:
   PORTS_BRANCH: ${{ inputs.ports_branch || 'main' }}
 
 jobs:
+  setup:
+    name: Select architectures
+    runs-on: ubuntu-latest
+    outputs:
+      arch: ${{ steps.select.outputs.arch }}
+    steps:
+      - id: select
+        env:
+          # empty on release events: build everything
+          WANTED: ${{ inputs.arch || 'all' }}
+        run: |
+          # vm:    vmactions arch (empty = x86_64). armv7 is built on arm64 (native
+          #        32-bit compat, no qemu-user). aarch64 VMs are fully emulated on
+          #        the x86 runner (recommended by vmactions over ubuntu-24.04-arm),
+          #        so these jobs are slow.
+          # jail:  "poudriere jail -a"
+          # asset: architecture in the archive name (uname -m, arm64 -> aarch64)
+          all='[
+            {"name":"amd64","vm":"","jail":"amd64","asset":"amd64"},
+            {"name":"arm64","vm":"aarch64","jail":"arm64.aarch64","asset":"aarch64"},
+            {"name":"armv7","vm":"aarch64","jail":"armv7","asset":"armv7"}
+          ]'
+          arch=$(echo "$all" | jq -c --arg w "$WANTED" 'map(select($w == "all" or .name == $w))')
+          echo "arch=$arch" >> "$GITHUB_OUTPUT"
+          echo "$arch" | jq .
+
   build:
     name: FreeBSD ${{ matrix.freebsd.major }} ${{ matrix.arch.name }}
+    needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 360
     strategy:
@@ -59,15 +92,7 @@ jobs:
           # newest available host. Poudriere warns that the jail is newer than the kernel.
           # Switch release to '16.0' as soon as vmactions publishes it.
           - { release: '15.1', version: '16', method: 'pkgbase=base_latest', major: '16' }
-        arch:
-          # vm:    vmactions arch (empty = x86_64). armv7 is built on arm64 (native 32-bit compat, no qemu-user).
-          #        aarch64 VMs are fully emulated on the x86 runner (recommended by vmactions
-          #        over ubuntu-24.04-arm), so these jobs are slow.
-          # jail:  "poudriere jail -a"
-          # asset: architecture in the archive name (uname -m, arm64 -> aarch64)
-          - { name: amd64, vm: '', jail: amd64, asset: amd64 }
-          - { name: arm64, vm: aarch64, jail: arm64.aarch64, asset: aarch64 }
-          - { name: armv7, vm: aarch64, jail: armv7, asset: armv7 }
+        arch: ${{ fromJSON(needs.setup.outputs.arch) }}
 
     env:
       JAIL_VERSION: ${{ matrix.freebsd.version }}
@@ -118,8 +143,8 @@ jobs:
           if-no-files-found: error
 
   release:
-    name: Draft release
-    if: startsWith(github.ref, 'refs/tags/v')
+    name: Attach archives to the prerelease
+    if: github.event_name == 'release'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -131,36 +156,17 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Create draft release
+      - name: Upload release assets
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ github.event.release.tag_name }}
         run: |
           set -eu
           ls -l dist
-          # versions, taken from the package file names
-          content=$(tar -tf dist/freebsd-15-amd64.tar)
-          ver() { echo "$content" | sed -n "s/^$1-\([0-9][^-]*\)\.pkg$/\1/p"; }
-          plugin=$(ver pfSense-pkg-crowdsec)
-          crowdsec=$(ver crowdsec)
-          bouncer=$(ver crowdsec-firewall-bouncer)
-
-          cat > notes.md <<EOT
-          Install with
-
-          \`\`\`
-          # fetch https://raw.githubusercontent.com/${GH_REPO}/refs/heads/main/install-crowdsec.sh
-          # sh install-crowdsec.sh --release ${TAG}
-          \`\`\`
-
-          Without a --release option, the script will install the latest stable (i.e non pre-release) version.
-
-          Built from crowdsecurity/packaging-freebsd@${PACKAGING_REF}, FreeBSD ports ${PORTS_BRANCH}.
-          EOT
-
-          gh release create "$TAG" dist/*.tar \
-            --draft \
-            --verify-tag \
-            --title "v${plugin} w/ crowdsec ${crowdsec} and bouncer ${bouncer}" \
-            --notes-file notes.md
+          for f in dist/*.tar; do
+            echo "== $f"
+            tar -tf "$f"
+          done
+          # --clobber: re-running the workflow replaces the previous archives
+          gh release upload "$TAG" dist/*.tar --clobber
