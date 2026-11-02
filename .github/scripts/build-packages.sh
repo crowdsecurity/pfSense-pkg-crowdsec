@@ -100,13 +100,14 @@ poudriere bulk -j "$JAIL" -p "$PTREE" -O crowdsec -O pfsense security/pfSense-pk
 echo "::endgroup::"
 
 echo "::group::Create $OUTPUT"
+# All is a symlink to .latest/All (poudriere commits atomically): use find -L
 PKGDIR="$BASEFS/data/packages/${JAIL}-${PTREE}/All"
 STAGING=$(mktemp -d)
 
 files=""
 for name in $OWN_PACKAGES; do
     # a digit right after the name, to avoid matching other packages
-    found=$(find "$PKGDIR" -maxdepth 1 -name "${name}-[0-9]*.pkg")
+    found=$(find -L "$PKGDIR" -maxdepth 1 -name "${name}-[0-9]*.pkg")
     if [ "$(echo "$found" | grep -c .)" -ne 1 ]; then
         echo "Error: expected exactly one package for $name in $PKGDIR, found: '$found'" >&2
         exit 1
