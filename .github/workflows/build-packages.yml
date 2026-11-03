@@ -9,13 +9,11 @@ name: Build packages
 # - pull request / manual run: archives are uploaded as workflow artifacts;
 #   for manual runs, the "arch" input selects the architecture(s)
 #
-# One job per FreeBSD version and architecture, all in amd64 VMs:
-# - amd64: poudriere. Also builds pfSense-pkg-crowdsec, which is NO_ARCH and
-#   shipped in every archive: these jobs always run, even when only arm is
-#   selected.
+# One independent job per FreeBSD version and architecture, all in amd64 VMs:
+# - amd64: poudriere
 # - arm64 / armv7: cross-compiled (native Go and clang, cgo for mattn sqlite)
-#   against a sysroot installed from the target's pkgbase repository. They start
-#   once the amd64 jobs are done, and take pfSense-pkg-crowdsec from them.
+#   against a sysroot installed from the target's pkgbase repository
+# Each job builds its own pfSense-pkg-crowdsec (NO_ARCH).
 # See .github/scripts/build-packages.sh
 
 on:
@@ -57,12 +55,12 @@ env:
   # the special pfSense branch: crowdsec built with WebAssembly re2, no abseil
   PACKAGING_REF: ${{ inputs.packaging_ref || 'crowdsec-wasm' }}
   PORTS_BRANCH: ${{ inputs.ports_branch || 'main' }}
-  # empty on release and pull request events: build everything
-  WANTED_ARCH: ${{ inputs.arch || 'all' }}
 
 jobs:
   amd64:
     name: FreeBSD ${{ matrix.freebsd.major }} amd64
+    # inputs.arch is empty on release and pull request events: build everything
+    if: ${{ (inputs.arch || 'all') == 'all' || inputs.arch == 'amd64' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -116,19 +114,9 @@ jobs:
             echo "::error::build failed for FreeBSD $FREEBSD_MAJOR amd64, see the logs artifact"
             exit 1
           fi
-          ls -l plugin/
           tar -tvf "out/freebsd-$FREEBSD_MAJOR-amd64.tar"
 
-      # needed by the arm jobs, whatever the selection
-      - name: Upload pfSense-pkg-crowdsec
-        uses: actions/upload-artifact@v7
-        with:
-          name: plugin-${{ matrix.freebsd.major }}
-          path: plugin/*.pkg
-          if-no-files-found: error
-
       - name: Upload archive
-        if: env.WANTED_ARCH == 'all' || env.WANTED_ARCH == 'amd64'
         uses: actions/upload-artifact@v7
         with:
           name: packages-${{ matrix.freebsd.major }}-amd64
@@ -137,10 +125,7 @@ jobs:
 
   cross:
     name: FreeBSD ${{ matrix.freebsd.major }} ${{ matrix.arch.name }}
-    needs: amd64
-    # run even if the amd64 job of another FreeBSD version failed: each job
-    # only needs the pfSense-pkg-crowdsec of its own version
-    if: ${{ !cancelled() && (inputs.arch || 'all') != 'amd64' }}
+    if: ${{ (inputs.arch || 'all') != 'amd64' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -157,12 +142,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-
-      - name: Get pfSense-pkg-crowdsec from the amd64 build
-        uses: actions/download-artifact@v8
-        with:
-          name: plugin-${{ matrix.freebsd.major }}
-          path: plugin
 
       - name: Cross-compile in FreeBSD ${{ matrix.freebsd.release }} VM
         uses: vmactions/freebsd-vm@v1

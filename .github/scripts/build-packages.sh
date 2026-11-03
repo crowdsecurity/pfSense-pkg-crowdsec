@@ -3,14 +3,13 @@
 # Build crowdsec, crowdsec-firewall-bouncer and pfSense-pkg-crowdsec for one
 # FreeBSD major version and one architecture, on an amd64 host.
 #
-# - TARGET=amd64: poudriere bulk in a pkgbase jail. Also produces
-#   pfSense-pkg-crowdsec, which is NO_ARCH: it is copied to $PLUGIN_DIR and
-#   shipped in the archives of every architecture.
+# - TARGET=amd64: poudriere bulk in a pkgbase jail.
 # - TARGET=arm64 / armv7: cross-compiled with the ports framework
 #   (CROSS_TOOLCHAIN + CROSS_SYSROOT): native amd64 Go and clang, cgo enabled
 #   (mattn sqlite), against a sysroot installed from the target's pkgbase
-#   repository. Needs the pfSense-pkg-crowdsec package of the amd64 build in
-#   $PLUGIN_DIR.
+#   repository. pfSense-pkg-crowdsec (NO_ARCH) is packaged against the
+#   sysroot's package database, where the cross-built crowdsec and bouncer are
+#   registered, so that its dependencies are recorded.
 #
 # The result is out/freebsd-<major>-<arch>.tar (plain tar, flat layout), as
 # expected by install-crowdsec.sh.
@@ -22,7 +21,6 @@
 #   FREEBSD_MAJOR   target FreeBSD major version  (14, 15, 16)
 #   BASE_REPO       pkgbase repository             (base_release_5, base_release_1, base_latest)
 #   TARGET          architecture to build          (amd64, arm64, armv7)
-#   PLUGIN_DIR      pfSense-pkg-crowdsec package   (default: ./plugin)
 #   PKG_URL         package mirror                 (default: pkg+https://pkg.freebsd.org)
 #   OUT_DIR         output directory               (default: ./out)
 #   PACKAGING_REPO  crowdsec ports overlay         (default: crowdsecurity/packaging-freebsd)
@@ -39,7 +37,6 @@ export ASSUME_ALWAYS_YES=yes
 PKG_URL=${PKG_URL:-pkg+https://pkg.freebsd.org}
 OUT_DIR=$(mkdir -p "${OUT_DIR:-out}" && cd "${OUT_DIR:-out}" && pwd)
 LOGS_DIR=$(mkdir -p "${LOGS_DIR:-build-logs}" && cd "${LOGS_DIR:-build-logs}" && pwd)
-PLUGIN_DIR=$(mkdir -p "${PLUGIN_DIR:-plugin}" && cd "${PLUGIN_DIR:-plugin}" && pwd)
 
 PACKAGING_REPO=${PACKAGING_REPO:-https://github.com/crowdsecurity/packaging-freebsd.git}
 PACKAGING_REF=${PACKAGING_REF:-crowdsec-wasm}
@@ -86,7 +83,7 @@ make_archive() {
     _archive="$OUT_DIR/freebsd-$FREEBSD_MAJOR-$_asset.tar"
     echo "::group::Create $_archive"
 
-    _crowdsec=$1
+    _crowdsec=$1 _plugin=$3
     for _p in "$@"; do
         printf '%-45s %s\n' "$(basename "$_p")" "$(pkg query -F "$_p" '%q')"
     done
@@ -101,6 +98,21 @@ make_archive() {
     done
     _bin=$(tar -tf "$_crowdsec" | grep '/bin/crowdsec$')
     tar -xOf "$_crowdsec" "$_bin" | file -
+
+    # pfSense-pkg-crowdsec has no binaries: NO_ARCH, valid for any architecture
+    _q=$(pkg query -F "$_plugin" '%q')
+    if [ "$_q" != "FreeBSD:$FREEBSD_MAJOR:*" ]; then
+        echo "Error: $(basename "$_plugin") is for $_q, expected FreeBSD:$FREEBSD_MAJOR:*" >&2
+        return 1
+    fi
+    # ...and it must depend on crowdsec and the bouncer
+    pkg info -d -F "$_plugin"
+    for _d in crowdsec crowdsec-firewall-bouncer; do
+        if ! pkg query -F "$_plugin" '%dn' | grep -qx "$_d"; then
+            echo "Error: $(basename "$_plugin") does not depend on $_d" >&2
+            return 1
+        fi
+    done
 
     # pfSense manages abseil/re2 itself: crowdsec must not depend on them
     if { pkg info -d -F "$_crowdsec"; pkg info -B -F "$_crowdsec"; } | grep -Eqi 'abseil|absl|re2'; then
@@ -170,17 +182,10 @@ EOT
 
     # All is a symlink to .latest/All (poudriere commits atomically)
     AMD64_PKGS="$BASEFS/data/packages/${JAIL}-${PTREE}/All"
-    PFSENSE_PKG=$(find_pkg "$AMD64_PKGS" pfSense-pkg-crowdsec)
-    if [ "$(pkg query -F "$PFSENSE_PKG" '%q')" != "FreeBSD:$FREEBSD_MAJOR:*" ]; then
-        echo "Error: pfSense-pkg-crowdsec must be NO_ARCH to be shipped for every architecture" >&2
-        exit 1
-    fi
-    # for the arm builds
-    cp "$PFSENSE_PKG" "$PLUGIN_DIR"/
-
     cs=$(find_pkg "$AMD64_PKGS" crowdsec)
     fw=$(find_pkg "$AMD64_PKGS" crowdsec-firewall-bouncer)
-    make_archive amd64 "FreeBSD:$FREEBSD_MAJOR:amd64" "$cs" "$fw" "$PFSENSE_PKG"
+    pf=$(find_pkg "$AMD64_PKGS" pfSense-pkg-crowdsec)
+    make_archive amd64 "FreeBSD:$FREEBSD_MAJOR:amd64" "$cs" "$fw" "$pf"
 }
 
 #
@@ -189,7 +194,6 @@ EOT
 
 # cross_build <arm64|armv7>
 cross_build() {
-    PFSENSE_PKG=$(find_pkg "$PLUGIN_DIR" pfSense-pkg-crowdsec)
     PORTS_DIR=$CROSS_BASE/ports
     CROWDSEC_PORTS_DIR=$CROSS_BASE/packaging
 
@@ -320,7 +324,26 @@ EOT
 
     _cs=$(find_pkg "$_dir/packages/All" crowdsec) || return 1
     _fw=$(find_pkg "$_dir/packages/All" crowdsec-firewall-bouncer) || return 1
-    make_archive "$_arch" "$_abi" "$_cs" "$_fw" "$PFSENSE_PKG"
+
+    echo "::group::[$1] Build security/pfSense-pkg-crowdsec"
+    # The ports framework records RUN_DEPENDS from the package database
+    # (pkg query), and arm packages can't be installed on the amd64 host:
+    # register them in the sysroot's database (-I: no install scripts) and
+    # point pkg at it with PKG_DBDIR. The package is NO_ARCH, and cross mode
+    # labels it FreeBSD:<major>:* from the sysroot.
+    _xpkg add -I -f "$_fw"
+    _xpkg add -I -f "$_cs"
+    _xpkg query '%n-%v %q' crowdsec crowdsec-firewall-bouncer
+    PKG_DBDIR="$_sysroot/var/db/pkg" \
+        make -C "$OVERLAY_DIR/security/pfSense-pkg-crowdsec" PORTSDIR="$PORTS_DIR" \
+            __MAKE_CONF="$_dir/make.conf" package \
+            > "$LOGS_DIR/cross-$_arch-pfSense-pkg-crowdsec.log" 2>&1 \
+        || { tail -n 80 "$LOGS_DIR/cross-$_arch-pfSense-pkg-crowdsec.log" >&2; return 1; }
+    tail -n 5 "$LOGS_DIR/cross-$_arch-pfSense-pkg-crowdsec.log"
+    echo "::endgroup::"
+    _pf=$(find_pkg "$_dir/packages/All" pfSense-pkg-crowdsec) || return 1
+
+    make_archive "$_arch" "$_abi" "$_cs" "$_fw" "$_pf"
 }
 
 case "$TARGET" in
