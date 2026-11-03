@@ -165,8 +165,9 @@ EOT
     echo "::endgroup::"
 
     echo "::group::Create ports trees"
-    poudriere ports -c -p "$PTREE" -m git+https -U "$PORTS_REPO" -B "$PORTS_BRANCH" -D
-    poudriere ports -c -p crowdsec -m git+https -U "$PACKAGING_REPO" -B "$PACKAGING_REF" -D
+    # shallow clones are poudriere's default (-D would fetch the full history)
+    poudriere ports -c -p "$PTREE" -m git+https -U "$PORTS_REPO" -B "$PORTS_BRANCH"
+    poudriere ports -c -p crowdsec -m git+https -U "$PACKAGING_REPO" -B "$PACKAGING_REF"
     poudriere ports -c -p pfsense -m null -M "$OVERLAY_DIR"
     poudriere ports -l
     echo "::endgroup::"
