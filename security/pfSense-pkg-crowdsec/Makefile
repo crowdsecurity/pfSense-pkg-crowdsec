@@ -15,6 +15,7 @@ LICENSE=	APACHE20
 RUN_DEPENDS=	crowdsec>=1.6.3:security/crowdsec \
 		crowdsec-firewall-bouncer>=0.0.28_1:security/crowdsec-firewall-bouncer
 
+NO_ARCH=	yes
 NO_BUILD=	yes
 NO_MTREE=	yes
 
