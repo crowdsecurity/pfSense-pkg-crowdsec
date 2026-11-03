@@ -329,12 +329,16 @@ EOT
     # The ports framework records RUN_DEPENDS from the package database
     # (pkg query), and arm packages can't be installed on the amd64 host:
     # register them in the sysroot's database (-I: no install scripts) and
-    # point pkg at it with PKG_DBDIR. The package is NO_ARCH, and cross mode
-    # labels it FreeBSD:<major>:* from the sysroot.
+    # point pkg at it with PKG_DBDIR.
+    # The package is NO_ARCH: Mk/Scripts/create-manifest.sh takes its ABI from
+    # "pkg config abi", run without the ABI_FILE cross mode only gives to
+    # pkg create, i.e. from the host (FreeBSD:15:* when building 16 on a 15.1
+    # host). Export ABI_FILE so that it comes from the sysroot.
     _xpkg add -I -f "$_fw"
     _xpkg add -I -f "$_cs"
     _xpkg query '%n-%v %q' crowdsec crowdsec-firewall-bouncer
-    PKG_DBDIR="$_sysroot/var/db/pkg" \
+    ABI_FILE="$_sysroot/bin/sh" pkg config abi
+    ABI_FILE="$_sysroot/bin/sh" PKG_DBDIR="$_sysroot/var/db/pkg" \
         make -C "$OVERLAY_DIR/security/pfSense-pkg-crowdsec" PORTSDIR="$PORTS_DIR" \
             __MAKE_CONF="$_dir/make.conf" package \
             > "$LOGS_DIR/cross-$_arch-pfSense-pkg-crowdsec.log" 2>&1 \
