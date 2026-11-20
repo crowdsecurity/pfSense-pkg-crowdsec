@@ -109,13 +109,16 @@ function crowdsec_validate_form($post, &$input_errors)
                 $input_errors[] = 'Remote LAPI URL is not valid.';
             }
         }
-        if (empty($post['remote_agent_user'])) {
-            $input_errors[] = 'Agent user is required for external LAPI usage.';
+        // Each credential is only used by its own service, so only require it when that service is enabled.
+        if (!empty($post['enable_agent'])) {
+            if (empty($post['remote_agent_user'])) {
+                $input_errors[] = 'Agent user is required for external LAPI usage.';
+            }
+            if (empty($post['remote_agent_password'])) {
+                $input_errors[] = 'Agent password is required for external LAPI usage.';
+            }
         }
-        if (empty($post['remote_agent_password'])) {
-            $input_errors[] = 'Agent password is required for external LAPI usage.';
-        }
-        if (empty($post['remote_fw_bouncer_api_key'])) {
+        if (!empty($post['enable_fw_bouncer']) && empty($post['remote_fw_bouncer_api_key'])) {
             $input_errors[] = 'Firewall bouncer API key is required for external LAPI usage.';
         }
     } else {
