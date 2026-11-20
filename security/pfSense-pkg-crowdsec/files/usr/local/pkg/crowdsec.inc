@@ -357,12 +357,6 @@ function crowdsec_resync_config()
     // Handle LAPI ON
     if (!empty($cf['enable_lapi'])) {
         $should_use_crowdsec = true;
-        // Modify LAPI settings
-        if (!empty($lapi_credentials)) {
-            if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
-                $lapi_credentials['url'] = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'];
-            }
-        }
         // Modify crowdsec configuration
         if (!empty($crowdsec_conf)) {
             $crowdsec_conf['api']['server']['enable'] = true;
@@ -379,13 +373,28 @@ function crowdsec_resync_config()
         set_yaml_content($crowdsec_conf, CROWDSEC_CONF);
 
         /**
-         * Machine and bouncer will be created (and registered) again on next service start; so we delete them here.
-         * @see /usr/local/etc/rc.d/crowdsec
+         * (Re)register our own machine and rewrite its credentials. We can't rely on rc.d/crowdsec for this:
+         * it only registers a machine when none exist, so it does nothing if other machines are registered (#137)
+         * and leaves the remote LAPI login in place after switching back from remote to local LAPI.
+         * Other machines are left untouched.
+         */
+        mwexec('cscli machines add pfsense --auto --force --error');
+        // cscli rewrote the credentials file: reload it so the final write doesn't restore the old password
+        $lapi_credentials = get_yaml_content(CROWDSEC_LAPI_CREDENTIALS);
+        $lapi_credentials_orig = $lapi_credentials;
+        // Modify LAPI settings
+        if (!empty($lapi_credentials)) {
+            if (!empty($cf['lapi_port']) && !empty($cf['lapi_host'])) {
+                $lapi_credentials['url'] = 'http://' . $cf['lapi_host'] . ':' . $cf['lapi_port'];
+            }
+        }
+
+        /**
+         * The bouncer will be created (and registered) again on next service start; so we delete it here.
          * @see /usr/local/etc/rc.d/crowdsec_firewall
          */
-        // there is no --force option, we ignore errors if the machine or bouncer don't exist
+        // there is no --force option, we ignore errors if the bouncer doesn't exist
         mwexec('cscli bouncers delete pfsense-firewall --ignore-missing');
-        mwexec('cscli machines delete pfsense --ignore-missing');
     } else { // Handle Remote LAPI ON (e.g. LAPI OFF)
         // Modify Agent yaml config
         if (!empty($crowdsec_conf)) {
