@@ -8,6 +8,11 @@ WWW: https://docs.crowdsec.net/docs/next/getting_started/install_crowdsec_pfsens
 Package Changelog
 =================
 
+0.1.9
+
+ * use pfctl args instead of stdin to restore pf tables on FreeBSD 16
+ * only require remote LAPI credentials for enabled services
+
 0.1.8
 
  * ensure alias exists when pfsense flushes its time-based rules
